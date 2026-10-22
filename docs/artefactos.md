@@ -27,16 +27,18 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia/ejecucion_YYYYMMDD_HHMMSS_XXXXXX
 | `pruebas-resultado.txt` | Resultado de las pruebas actuales (copia de compatibilidad). |
 | `actual-pruebas-resultado.txt` | Resultado estructurado de las pruebas actuales. |
 | `actual-pruebas.log` | Log de las pruebas actuales. |
-| `base-pruebas-resultado.txt` | Resultado de las pruebas del commit base + parche. |
+| `base-pruebas-resultado.txt` | Resultado de las pruebas del commit base + parche, con rutas protegidas restauradas. |
 | `base-pruebas.log` | Log de las pruebas congeladas. |
-| `verificacion-ronda-N/` | Copia del commit base con el parche aplicado. |
+| `actual-ronda-N/` | Copia desechable del commit base + parche usada para las pruebas actuales. |
+| `verificacion-ronda-N/` | Copia del commit base + parche con las rutas protegidas restauradas. |
+| `revisor-dir/` | Directorio aislado donde se ejecuta el revisor. |
+| `segunda-opinion-dir/` | Directorio aislado donde se ejecuta la segunda opinión. |
 | `archivos-cambiados.txt` | Rutas modificadas por el agente. |
 | `rutas-protegidas.txt` | Subconjunto protegido de esas rutas. |
 | `nonce.txt` | Nonce del veredicto. |
 | `revision-agy.txt` | Salida completa del revisor. |
 | `veredicto.txt` | `APROBADO`, `CORRECCIONES` o `INDETERMINADO`. |
 | `segunda-opinion.txt` | Salida de la segunda opinión, si se pidió. |
-| `acta.md`, `acta.json` | Evidencia final. |
 
 ## Formato de resultados de pruebas
 

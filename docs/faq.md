@@ -26,9 +26,9 @@ Sí, pero define `EQUIPO_TEST_CMD` para que apunte al paquete correcto y ajusta
 ## ¿Cómo funcionan las pruebas congeladas si el agente añade pruebas nuevas?
 
 Las pruebas base ejecutan el comando del commit base. Las pruebas actuales se
-ejecutan en la copia del agente y sí incluyen las pruebas nuevas. Un `VALIDADO`
-exige que ambas pasen. Si el agente cambia archivos de pruebas, se marca
-`REVISION_MANUAL`.
+ejecutan en una copia del commit base con el parche aplicado y sí incluyen las
+pruebas nuevas. Un `VALIDADO` exige que ambas pasen. Si el agente cambia
+archivos de pruebas, se marca `REVISION_MANUAL`.
 
 ## ¿Por qué se ejecutan dos veces las pruebas?
 
@@ -38,9 +38,12 @@ congelada.
 
 ## ¿Necesito `npm ci`?
 
-Solo si tu proyecto Node tiene `package-lock.json` y necesita dependencias. Sin
-autorización, se usa `node_modules` si ya existe. Si no existe, las pruebas
-pueden fallar y el estado será `RECHAZADO` o `REVISION_MANUAL`.
+Sí, si tu proyecto Node tiene dependencias. Las pruebas se ejecutan en copias
+limpias del árbol, no en el `node_modules` del agente. Con
+`EQUIPO_NPM_CI=si` se instalan dependencias en cada copia; sin autorización, las
+pruebas pueden fallar y el estado será `RECHAZADO` o `REVISION_MANUAL`. También
+puedes fijar un comando que use un entorno ya preparado con
+`EQUIPO_TEST_CMD`.
 
 ## ¿Puedo desactivar las pruebas base?
 

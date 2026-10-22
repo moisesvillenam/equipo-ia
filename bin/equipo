@@ -29,7 +29,9 @@ cargar_config() {
 }
 cargar_config "$EQUIPO_CONFIG"
 MODE="${EQUIPO_MODE:-$MODE}"
+INTERACTION="${EQUIPO_INTERACTION:-$INTERACTION}"
 EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"
+TIMEOUT_BIN="${EQUIPO_TIMEOUT_BIN:-$(command -v timeout || command -v gtimeout || true)}"
 
 if [[ -n "${EQUIPO_IA_SCRIPT:-}" ]]; then
   ORCH="$EQUIPO_IA_SCRIPT"

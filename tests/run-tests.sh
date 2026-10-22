@@ -122,6 +122,18 @@ RUN="$(latest_run "$TMP/grande/estado")"
 assert_eq "20" "$CODE" "parche grande: código de salida"
 assert_eq "REVISION_MANUAL" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "parche grande: estado"
 
+# 3c. El agente debilita la prueba: las pruebas base deben detectarlo.
+setup_repo "$TMP/cheat/repo"
+set +e
+EQUIPO_FAKE_MODE=cheat run_equipo "$TMP/cheat/repo" "$TMP/cheat/estado" --si --modo maximo --intentos 0 "Corrige el saludo"
+CODE=$?
+set -e
+RUN="$(latest_run "$TMP/cheat/estado")"
+assert_eq "20" "$CODE" "prueba debilitada: código de salida"
+assert_eq "REVISION_MANUAL" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "prueba debilitada: estado"
+assert_contains "$RUN/actual-pruebas-resultado.txt" "ESTADO=APROBADO" "prueba debilitada: actual pasa"
+assert_contains "$RUN/base-pruebas-resultado.txt" "ESTADO=FALLIDO" "prueba debilitada: base falla"
+
 # 4. Pruebas fallidas y correcciones agotadas.
 setup_repo "$TMP/fallo/repo"
 set +e

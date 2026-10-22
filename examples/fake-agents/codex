@@ -22,6 +22,15 @@ case "$mode" in
     cp "$fix" ./index.js
     printf '\n// prueba tocada por el agente\n' >> ./test.js
     printf 'fake-codex: parche + prueba modificada\n' ;;
+  cheat)
+    cat > ./test.js <<'EOF'
+const assert = require("node:assert");
+const { greet } = require("./index");
+
+assert.strictEqual(greet("Mundo"), "Hola Mundo");
+console.log("ok: greet (prueba debilitada)");
+EOF
+    printf 'fake-codex: prueba debilitada sin corregir el código\n' ;;
   *)
     echo "fake-codex: modo desconocido: $mode" >&2; exit 1 ;;
 esac

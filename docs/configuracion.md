@@ -47,7 +47,10 @@ la línea.
 
 Si `package.json` tiene un script `test` real, se usa `npm test`. Si hay
 `package-lock.json`, `EQUIPO_NPM_CI=si` ejecuta `npm ci` antes de las pruebas.
-`preguntar` pide autorización; `no` omite la instalación.
+`preguntar` pide autorización; `no` omite la instalación. En proyectos con
+dependencias, se recomienda `si` para ambas copias de pruebas: no se reutiliza
+`node_modules` del agente, para no validar con dependencias que él haya podido
+modificar.
 
 ### Python
 

@@ -38,8 +38,9 @@ is `VALIDADO`.
 ## Why it is different
 
 1. **Patch-only.** Your working tree is untouched until you apply the patch.
-2. **Frozen base tests.** The same test command runs on a clean base commit plus
-   the patch, catching regressions or weakened tests.
+2. **Frozen base tests.** Tests run in disposable copies of the base commit plus
+   the patch. The base copy restores protected paths from the original commit,
+   so weakened tests and test-config changes are detected.
 3. **Protected test paths.** Changes to tests, locks, CI, auth, and migrations
    force a human review.
 4. **Nonce-bound verdict.** The reviewer must end with

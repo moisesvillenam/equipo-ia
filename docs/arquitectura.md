@@ -18,9 +18,10 @@
 3. Ejecutar el programador sobre WORK.
 4. Generar `cambios.patch` con `git diff --cached BASE_WORK`.
 5. Comprobar rutas protegidas.
-6. Ejecutar pruebas actuales en WORK.
-7. Crear VERIFY con `git archive BASE_SHA`, aplicar el parche y ejecutar
-   las pruebas del commit base.
+6. Crear una copia del commit base, aplicarle el parche y ejecutar las pruebas
+   actuales en esa copia (no en WORK).
+7. Crear otra copia, aplicar el parche, restaurar desde la base todas las rutas
+   protegidas y ejecutar las pruebas congeladas.
 8. Generar nonce, pedir veredicto al revisor y extraer la última línea válida.
 9. Si falla algo corregible, repetir con el informe del revisor y las pruebas.
 10. Clasificar el estado, escribir acta y dejar el parche sin aplicar.
@@ -31,6 +32,8 @@
 - El repositorio original no se modifica durante la ejecución.
 - El parche siempre se calcula contra el commit base, no contra el árbol del
   agente.
+- Las pruebas se ejecutan en copias desechables; sus efectos secundarios no
+  entran en el parche.
 - Un `VALIDADO` exige parche aplicable, pruebas actuales aprobadas, pruebas base
   aprobadas, rutas protegidas intactas y veredicto aprobado.
 - El nonce se genera **después** del parche; el diff no puede contenerlo.
@@ -55,27 +58,35 @@ que no dependa de ellos.
 
 ## Pruebas congeladas
 
-`equipo-pruebas.sh` detecta:
+La misma detección se ejecuta en dos copias desechables:
+
+- **Actual:** copia del commit base + parche. Incluye las pruebas nuevas o
+  modificadas por el agente.
+- **Base:** copia del commit base + parche, pero restaurando desde la base todas
+  las rutas protegidas. Usa las pruebas y la configuración originales.
+
+`equipo-pruebas.sh` detecta, en este orden:
 
 1. `EQUIPO_TEST_CMD`, si está definido;
 2. `npm test`, si `package.json` tiene un script de test real;
 3. `python3 -m pytest -q`, si hay configuración o carpeta `tests/` y pytest;
 4. `testthat::test_dir("tests/testthat")`, si hay `DESCRIPTION` y testthat.
 
-La misma detección se ejecuta en WORK y en VERIFY. En VERIFY, el `package.json`
-es el del commit base, por lo que el comando es el original aunque el agente lo
-haya cambiado. `EQUIPO_NPM_CI=si` permite instalar dependencias; `no` reutiliza
-`node_modules` si existe.
+En la copia base, `package.json` y los archivos de pruebas se restauran desde el
+commit original. Así, si el agente debilita una prueba, la tanda base sigue
+ejecutando la prueba original y detecta la diferencia. `EQUIPO_NPM_CI=si` permite
+instalar dependencias limpias en ambas copias.
 
 ## Clasificación
 
 ```text
 sin parche                          -> SIN_CAMBIOS
 programador falló                   -> RECHAZADO
+parche excede el límite             -> REVISION_MANUAL
 parche no aplica                    -> RECHAZADO
+rutas protegidas modificadas        -> REVISION_MANUAL
 pruebas actuales o base fallaron    -> RECHAZADO
 pruebas no disponibles              -> REVISION_MANUAL
-rutas protegidas modificadas        -> REVISION_MANUAL
 revisor no concluyente              -> REVISION_MANUAL
 todo lo anterior correcto           -> VALIDADO
 ```

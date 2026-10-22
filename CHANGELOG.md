@@ -8,8 +8,9 @@ Primera versión pública de Equipo IA.
 
 - Flujo de solo parche: el agente trabaja sobre una copia temporal y el
   repositorio original no se modifica.
-- Pruebas congeladas: se aplica el parche a una copia del commit base y se
-  ejecuta el comando de pruebas original.
+- Pruebas congeladas: las pruebas actuales y las de la base se ejecutan en copias
+  desechables; en la copia base se restauran las rutas protegidas desde el
+  commit original y se usa su comando de pruebas.
 - Rutas protegidas: cambios en pruebas, locks, CI, auth o migraciones pasan a
   `REVISION_MANUAL`.
 - Veredicto del revisor con nonce generado después del parche.

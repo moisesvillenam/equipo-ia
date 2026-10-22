@@ -47,9 +47,10 @@ Un `git diff` y un “he terminado” no son evidencia suficiente.
 
 1. **Solo parche.** El agente trabaja en una copia temporal. Tu árbol de trabajo
    no se modifica hasta que tú ejecutas `/aplicar`.
-2. **Pruebas congeladas.** Además de las pruebas actuales, se crea una copia del
-   commit base, se le aplica el parche y se ejecuta el mismo comando de pruebas.
-   Así se detecta una regresión que el agente haya ocultado.
+2. **Pruebas congeladas.** Las pruebas actuales y las de la base se ejecutan en
+   copias desechables. En la copia base se restauran las rutas protegidas desde
+   el commit original y se usa su comando de pruebas. Así se detecta una
+   regresión o una prueba debilitada que el agente haya ocultado.
 3. **Rutas protegidas.** Por defecto, cambios en `test.js`, `tests/*`, `*.test.js`,
    `package.json`, locks, `.github/*`, `Dockerfile`, `auth/*` o `migrations/*`
    bloquean la validación automática y pasan a revisión humana.
@@ -74,8 +75,8 @@ repo limpio
    │
    ├─ parche (git diff contra la base)
    │
-   ├─ pruebas actuales
-   ├─ pruebas del commit base + parche
+   ├─ pruebas actuales (copia base + parche)
+   ├─ pruebas del commit base + parche (rutas protegidas restauradas)
    ├─ rutas protegidas
    ├─ revisor + nonce
    │
@@ -208,7 +209,7 @@ Cada ejecución vive en
 | `estado-final.txt` | `VALIDADO`, `SIN_CAMBIOS`, `REVISION_MANUAL` o `RECHAZADO`. |
 | `motivo.txt` | Explicación del estado. |
 | `actual-pruebas-resultado.txt` | Resultado estructurado de las pruebas actuales. |
-| `base-pruebas-resultado.txt` | Resultado de las pruebas del commit base + parche. |
+| `base-pruebas-resultado.txt` | Resultado de las pruebas del commit base + parche, con rutas protegidas restauradas. |
 | `actual-pruebas.log` | Salida completa de las pruebas actuales. |
 | `base-pruebas.log` | Salida de las pruebas congeladas. |
 | `rutas-protegidas.txt` | Rutas protegidas modificadas (vacío si no hay). |
@@ -240,6 +241,10 @@ Las variables de entorno tienen prioridad sobre el archivo.
 | `EQUIPO_REVIEW_MODEL` | vacío | Modelo para AGY. |
 
 ### Pruebas por pila
+
+En proyectos Node con dependencias, usa `EQUIPO_NPM_CI=si` para que ambas
+verificaciones instalen dependencias limpias. No se reutiliza el `node_modules`
+del agente.
 
 ```bash
 # Node

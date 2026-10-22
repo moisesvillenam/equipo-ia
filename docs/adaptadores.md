@@ -20,8 +20,8 @@ El prompt se pasa por `stdin`. Si `EQUIPO_CODEX_MODEL` está definido, se añade
 opencode run --standalone [--model MODELO] "$prompt"
 ```
 
-Si el prompt supera 60 000 caracteres, se escribe a un archivo y se pasa con
-`--file`. OpenCode debe poder modificar el directorio de trabajo.
+El prompt se pasa como argumento. OpenCode debe poder modificar el directorio de
+trabajo.
 
 ### Revisor AGY
 

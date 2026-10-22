@@ -119,7 +119,8 @@ case "$MODE" in
   auto)
     if command -v codex >/dev/null 2>&1; then MODE=maximo
     elif command -v opencode >/dev/null 2>&1; then MODE=continuo
-    else error_uso "no hay codex ni opencode disponibles"
+    elif [[ -n "${EQUIPO_PROGRAMMER_CMD:-}" ]]; then MODE=continuo; EQUIPO_PROGRAMMER="command"
+    else error_uso "no hay codex, opencode ni EQUIPO_PROGRAMMER_CMD"
     fi ;;
   maximo|continuo) ;;
   *) error_uso "modo inválido: $MODE (usa maximo, continuo o auto)" ;;
@@ -228,11 +229,7 @@ run_agent() {
         opencode)
           local oc_args=(run --standalone)
           [[ -n "$EQUIPO_MODEL" ]] && oc_args+=(--model "$EQUIPO_MODEL")
-          if ((${#prompt} > 60000)); then
-            ( cd "$cwd" && "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" opencode "${oc_args[@]}" --file "$prompt_file" "Lee el archivo adjunto y sigue sus instrucciones." < /dev/null ) 2>&1 | tee "$salida"
-          else
-            ( cd "$cwd" && "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" opencode "${oc_args[@]}" "$prompt" < /dev/null ) 2>&1 | tee "$salida"
-          fi
+          ( cd "$cwd" && "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" opencode "${oc_args[@]}" "$prompt" < /dev/null ) 2>&1 | tee "$salida"
           code=${PIPESTATUS[0]} ;;
         command)
           ( cd "$cwd" && EQUIPO_PROMPT_FILE="$prompt_file" EQUIPO_CWD="$cwd" EQUIPO_ROLE="$rol" EQUIPO_NONCE="${EQUIPO_NONCE:-}" \
@@ -304,22 +301,42 @@ run_tests() {
   return 0
 }
 
+crear_copia_arbol() {
+  local destino="$1" restaurar_protegidas="$2" ruta
+  rm -rf "$destino"; mkdir -p "$destino"
+  if ! git -C "$WORK" archive "$WORK_BASE" | tar -x -C "$destino"; then return 1; fi
+  git -C "$destino" init -q
+  git -C "$destino" add -A
+  git -C "$destino" -c user.name='Equipo IA' -c user.email='equipo-ia@localhost' commit -qm 'Base congelada' --allow-empty
+  if ! git -C "$destino" apply "$RUN/cambios.patch"; then return 1; fi
+  if [[ "$restaurar_protegidas" == si && -s "$RUN/rutas-protegidas.txt" ]]; then
+    while IFS= read -r ruta; do
+      [[ -n "$ruta" ]] || continue
+      if git -C "$WORK" cat-file -e "$WORK_BASE:$ruta" 2>/dev/null; then
+        git -C "$WORK" archive "$WORK_BASE" -- "$ruta" | tar -x -C "$destino" || return 1
+      else
+        rm -f "$destino/$ruta"
+      fi
+    done < "$RUN/rutas-protegidas.txt"
+  fi
+  return 0
+}
+
+preparar_actual() {
+  local actual="$RUN/actual-ronda-${ronda_actual}"
+  if crear_copia_arbol "$actual" no; then
+    run_tests actual "$actual"
+  else
+    printf 'ESTADO=REVISION_MANUAL\nMOTIVO=No se pudo crear la copia de pruebas actuales.\n' > "$RUN/actual-pruebas-resultado.txt"
+    printf '2\n' > "$RUN/actual-pruebas-status.txt"
+  fi
+}
+
 preparar_base() {
   local verify="$RUN/verificacion-ronda-${ronda_actual}"
-  rm -rf "$verify"; mkdir -p "$verify"
-  if ! git -C "$WORK" archive "$WORK_BASE" | tar -x -C "$verify"; then
-    printf 'No se pudo crear la copia del commit base.\n' > "$RUN/base-pruebas-resultado.txt"
+  if ! crear_copia_arbol "$verify" si; then
+    printf 'ESTADO=REVISION_MANUAL\nMOTIVO=No se pudo preparar el commit base con el parche.\n' > "$RUN/base-pruebas-resultado.txt"
     printf '2\n' > "$RUN/base-pruebas-status.txt"; return 0
-  fi
-  git -C "$verify" init -q
-  git -C "$verify" add -A
-  git -C "$verify" -c user.name='Equipo IA' -c user.email='equipo-ia@localhost' commit -qm 'Base congelada' --allow-empty
-  if ! git -C "$verify" apply "$RUN/cambios.patch"; then
-    printf 'ESTADO=REVISION_MANUAL\nMOTIVO=El parche no se aplica sobre el commit base.\n' > "$RUN/base-pruebas-resultado.txt"
-    printf '2\n' > "$RUN/base-pruebas-status.txt"; return 0
-  fi
-  if [[ -d "$WORK/node_modules" && ! -e "$verify/node_modules" ]]; then
-    cp -al "$WORK/node_modules" "$verify/node_modules" 2>/dev/null || cp -a "$WORK/node_modules" "$verify/node_modules" 2>/dev/null || true
   fi
   if [[ "$EQUIPO_BASE_TESTS" == no ]]; then
     printf 'ESTADO=OMITIDO\nMOTIVO=Pruebas del commit base desactivadas por configuración.\n' > "$RUN/base-pruebas-resultado.txt"
@@ -331,17 +348,27 @@ preparar_base() {
 run_second_opinion() {
   [[ "$EQUIPO_SECOND_OPINION" == si ]] || return 0
   local prompt="$1" salida="$RUN/segunda-opinion.txt" code=0
+  local dir="$RUN/segunda-opinion-dir"
+  mkdir -p "$dir"
+  if [[ ! -d "$dir/.git" ]]; then
+    git -C "$dir" init -q
+    git -C "$dir" -c user.name='Equipo IA' -c user.email='equipo-ia@localhost' commit -qm 'sin contenido' --allow-empty
+  fi
+  if ((${#prompt} > EQUIPO_PROMPT_MAX)); then
+    printf 'La segunda opinión se omitió: el prompt excede el límite.\n' > "$salida"
+    return 0
+  fi
   if [[ -n "$EQUIPO_SECOND_OPINION_CMD" ]]; then
     printf '%s' "$prompt" > "$RUN/prompt-segunda-opinion.txt"
     set +e
-    ( cd "$RUN" && EQUIPO_PROMPT_FILE="$RUN/prompt-segunda-opinion.txt" EQUIPO_CWD="$WORK" EQUIPO_ROLE=segunda \
+    ( cd "$dir" && EQUIPO_PROMPT_FILE="$RUN/prompt-segunda-opinion.txt" EQUIPO_CWD="$dir" EQUIPO_ROLE=segunda \
       "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" bash -c "$EQUIPO_SECOND_OPINION_CMD" ) > "$salida" 2>&1
     code=$?; set -e
   elif command -v opencode >/dev/null 2>&1; then
     local oc_args=(run --standalone)
     [[ -n "$EQUIPO_MODEL" ]] && oc_args+=(--model "$EQUIPO_MODEL")
     set +e
-    ( cd "$WORK" && "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" opencode "${oc_args[@]}" "$prompt" ) > "$salida" 2>&1
+    ( cd "$dir" && "$TIMEOUT_BIN" --signal=TERM --kill-after=10s "$EQUIPO_TIMEOUT" opencode "${oc_args[@]}" "$prompt" < /dev/null ) > "$salida" 2>&1
     code=$?; set -e
   else
     printf 'Segunda opinión solicitada, pero opencode no está disponible.\n' > "$salida"
@@ -403,7 +430,13 @@ Usa APROBADO solo si el parche es aplicable, resuelve la tarea y no requiere cam
     printf 'El prompt de revisión excede el límite (%s bytes).\n' "$EQUIPO_PROMPT_MAX" > "$RUN/revision-agy.txt"
     printf 'INDETERMINADO\n' > "$RUN/veredicto.txt"; return 2
   fi
-  run_agent revisor "$prompt" "$RUN/revision-agy-ronda-${ronda_actual}.txt" "$WORK" "$ronda_actual"
+  local revisar_dir="$RUN/revisor-dir"
+  mkdir -p "$revisar_dir"
+  if [[ ! -d "$revisar_dir/.git" ]]; then
+    git -C "$revisar_dir" init -q
+    git -C "$revisar_dir" -c user.name='Equipo IA' -c user.email='equipo-ia@localhost' commit -qm 'sin contenido' --allow-empty
+  fi
+  run_agent revisor "$prompt" "$RUN/revision-agy-ronda-${ronda_actual}.txt" "$revisar_dir" "$ronda_actual"
   cp "$RUN/revision-agy-ronda-${ronda_actual}.txt" "$RUN/revision-agy.txt" 2>/dev/null || true
   if [[ "$(cat "$RUN/revision-agy-ronda-${ronda_actual}.txt.status" 2>/dev/null || echo 1)" != 0 ]]; then
     printf 'INDETERMINADO\n' > "$RUN/veredicto.txt"; return 2
@@ -533,7 +566,7 @@ if ((PROGRAMMER_OK)); then
     fi
     if check_protected; then PROTECTED_OK=1; else PROTECTED_OK=0; fi
 
-    run_tests actual "$WORK"
+    preparar_actual
     CUR_STATUS="$(cat "$RUN/actual-pruebas-status.txt" 2>/dev/null || echo 2)"
     preparar_base
     BASE_STATUS="$(cat "$RUN/base-pruebas-status.txt" 2>/dev/null || echo 2)"
@@ -608,6 +641,8 @@ elif ((PATCH_TOO_BIG)); then
   STATE="REVISION_MANUAL"; MOTIVO="El parche excede el límite de $EQUIPO_DIFF_MAX bytes; revisión humana obligatoria."
 elif ((!PATCH_OK)); then
   STATE="RECHAZADO"; MOTIVO="El parche no se aplica limpiamente sobre el commit base."
+elif ((PROTECTED_OK == 0)); then
+  STATE="REVISION_MANUAL"; MOTIVO="Se modificaron rutas protegidas: revisión humana obligatoria."
 elif ((CUR_STATUS == 0 || BASE_STATUS == 0)); then
   STATE="RECHAZADO"; MOTIVO="Hay pruebas fallidas después de las correcciones."
 elif ((CUR_STATUS == 1 && BASE_STATUS == 1 && PROTECTED_OK == 1 && REVIEW_RESULT == 0)); then
