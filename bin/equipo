@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# Equipo IA 4.3 — consola interactiva.
+# Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
+set -uo pipefail
+
+EQUIPO_VERSION="4.3.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
+EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"
+MODE="${EQUIPO_MODE:-auto}"
+INTERACTION="${EQUIPO_INTERACTION:-desarrollo}"
+TIMEOUT_BIN="${EQUIPO_TIMEOUT_BIN:-$(command -v timeout || command -v gtimeout || true)}"
+
+cargar_config() {
+  local archivo="$1" linea clave valor
+  [[ -f "$archivo" ]] || return 0
+  while IFS= read -r linea || [[ -n "$linea" ]]; do
+    [[ "$linea" =~ ^[[:space:]]*# ]] && continue
+    [[ "$linea" =~ ^[[:space:]]*$ ]] && continue
+    [[ "$linea" == *=* ]] || continue
+    clave="$(printf '%s' "${linea%%=*}" | tr -d '[:space:]')"
+    [[ "$clave" =~ ^[A-Z_][A-Z0-9_]*$ ]] || continue
+    valor="${linea#*=}"
+    valor="${valor#"${valor%%[![:space:]]*}"}"; valor="${valor%"${valor##*[![:space:]]}"}"
+    valor="${valor#\"}"; valor="${valor%\"}"; valor="${valor#\'}"; valor="${valor%\'}"
+    [[ -n "${!clave:-}" ]] && continue
+    export "$clave=$valor"
+  done < "$archivo"
+}
+cargar_config "$EQUIPO_CONFIG"
+MODE="${EQUIPO_MODE:-$MODE}"
+EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"
+
+if [[ -n "${EQUIPO_IA_SCRIPT:-}" ]]; then
+  ORCH="$EQUIPO_IA_SCRIPT"
+elif [[ -f "$SCRIPT_DIR/../equipo-ia.sh" ]]; then
+  ORCH="$SCRIPT_DIR/../equipo-ia.sh"
+elif [[ -f "$SCRIPT_DIR/../share/equipo-ia/equipo-ia.sh" ]]; then
+  ORCH="$SCRIPT_DIR/../share/equipo-ia/equipo-ia.sh"
+elif [[ -f "$SCRIPT_DIR/equipo-ia.sh" ]]; then
+  ORCH="$SCRIPT_DIR/equipo-ia.sh"
+else
+  printf 'No encuentro equipo-ia.sh. Define EQUIPO_IA_SCRIPT.\n' >&2
+  exit 1
+fi
+[[ -r "$ORCH" ]] || { printf 'No puedo leer %s\n' "$ORCH" >&2; exit 1; }
+
+latest_run() {
+  ls -1dt "$EQUIPO_STATE_DIR"/ejecucion_* 2>/dev/null | head -1 || true
+}
+LAST="$(latest_run)"
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+ROOT="${ROOT:-$PWD}"
+
+ayuda() {
+  cat <<'EOF'
+Comandos:
+  /ayuda                 Muestra esta ayuda.
+  /chat                  Modo conversación (si hay codex).
+  /desarrollar           Modo desarrollo (Equipo IA).
+  /modo maximo|continuo|auto  Cambia el modo.
+  /estado                Estado del repositorio.
+  /ultimo                Última ejecución y su acta.
+  /revision              Salida del revisor.
+  /diff                  Parche propuesto.
+  /aplicar               Aplica el parche VALIDADO (pide confirmación).
+  /salir                 Sale.
+
+En modo desarrollo, escribe una tarea y se ejecutará el equipo.
+EOF
+}
+
+case "${1:-}" in
+  --help|-h) ayuda; exit 0 ;;
+  --version) printf 'Equipo IA %s\n' "$EQUIPO_VERSION"; exit 0 ;;
+esac
+
+estado_repo() {
+  if git rev-parse --show-toplevel >/dev/null 2>&1; then
+    printf 'Repositorio: %s\n' "$(git rev-parse --show-toplevel)"
+    printf 'Rama: %s\n' "$(git rev-parse --abbrev-ref HEAD)"
+    printf 'Commit: %s\n' "$(git rev-parse --short HEAD)"
+    local cambios
+    cambios="$(git status --short)"
+    if [[ -n "$cambios" ]]; then printf 'Cambios:\n%s\n' "$cambios"; else printf 'Árbol limpio.\n'; fi
+  else
+    printf 'No estás dentro de un repositorio Git.\n'
+  fi
+}
+
+mostrar_ultimo() {
+  LAST="$(latest_run)"
+  if [[ -z "$LAST" ]]; then printf 'Todavía no hay ejecuciones.\n'; return; fi
+  printf 'Ejecución: %s\n' "$LAST"
+  printf 'Estado: %s\n' "$(cat "$LAST/estado-final.txt" 2>/dev/null || echo '?')"
+  printf 'Motivo: %s\n' "$(cat "$LAST/motivo.txt" 2>/dev/null || echo '?')"
+  [[ -f "$LAST/acta.md" ]] && printf 'Acta: %s\n' "$LAST/acta.md"
+  [[ -f "$LAST/cambios.patch" ]] && printf 'Parche: %s\n' "$LAST/cambios.patch"
+}
+
+aplicar() {
+  local run root nonce ultima
+  LAST="$(latest_run)"
+  [[ -n "$LAST" ]] || { printf 'No hay ejecuciones.\n'; return 1; }
+  run="$LAST"
+  root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$root" ]] || { printf 'No estás dentro de un repositorio Git.\n'; return 1; }
+
+  [[ "$(cat "$run/estado-final.txt" 2>/dev/null || true)" == "VALIDADO" ]] || { printf 'La ejecución no está VALIDADA.\n'; return 1; }
+  [[ "$(cat "$run/veredicto.txt" 2>/dev/null || true)" == "APROBADO" ]] || { printf 'El revisor no aprobó.\n'; return 1; }
+  nonce="$(cat "$run/nonce.txt" 2>/dev/null || true)"
+  [[ -n "$nonce" ]] || { printf 'Falta el nonce del veredicto.\n'; return 1; }
+  ultima="$(grep -Eo "VEREDICTO\\[$nonce\\]: (APROBADO|CORRECCIONES)" "$run/revision-agy.txt" 2>/dev/null | tail -1 || true)"
+  [[ "$ultima" == "VEREDICTO[$nonce]: APROBADO" ]] || { printf 'El veredicto con nonce no es válido.\n'; return 1; }
+  [[ "$(grep '^ESTADO=' "$run/pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas actuales no están aprobadas.\n'; return 1; }
+  [[ "$(grep '^ESTADO=' "$run/base-pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas del commit base no están aprobadas.\n'; return 1; }
+  [[ -f "$run/rutas-protegidas.txt" && ! -s "$run/rutas-protegidas.txt" ]] || { printf 'Hay rutas protegidas modificadas.\n'; return 1; }
+  [[ "$(cat "$run/origen.txt" 2>/dev/null || true)" == "$root" ]] || { printf 'La ejecución pertenece a otro repositorio.\n'; return 1; }
+  [[ "$(cat "$run/commit-origen.txt" 2>/dev/null || true)" == "$(git rev-parse HEAD)" ]] || { printf 'El commit actual no es el commit base de la ejecución.\n'; return 1; }
+  [[ -z "$(git status --porcelain --untracked-files=all)" ]] || { printf 'El repositorio no está limpio.\n'; return 1; }
+  [[ -s "$run/cambios.patch" ]] || { printf 'El parche está vacío.\n'; return 1; }
+  git apply --check "$run/cambios.patch" || { printf 'El parche no se aplica.\n'; return 1; }
+
+  printf '\nSe aplicará:\n  %s\nEscribe APLICAR para confirmar: ' "$run/cambios.patch"
+  local confirmacion
+  read -r confirmacion || return 1
+  [[ "$confirmacion" == "APLICAR" ]] || { printf 'Cancelado.\n'; return 1; }
+  git apply "$run/cambios.patch" || { printf 'Error al aplicar.\n'; return 1; }
+  printf 'Parche aplicado. Revisa los cambios y haz commit cuando quieras.\n'
+}
+
+chat() {
+  local mensaje="$1" prompt respuesta
+  if [[ -n "${EQUIPO_CHAT_CMD:-}" ]]; then
+    prompt="$(printf '%s\n\nUsuario: %s\n' "$HISTORIAL" "$mensaje")"
+    respuesta="$(EQUIPO_PROMPT="$prompt" bash -c "$EQUIPO_CHAT_CMD" 2>&1)" || true
+  elif command -v codex >/dev/null 2>&1 && [[ -n "$TIMEOUT_BIN" ]]; then
+    prompt="$(printf '%s\n\nUsuario: %s\n' "$HISTORIAL" "$mensaje")"
+    respuesta="$(printf '%s' "$prompt" | "$TIMEOUT_BIN" --signal=TERM --kill-after=5s "${EQUIPO_TIMEOUT:-900}" codex exec --sandbox read-only -C "$ROOT" - 2>&1)" || true
+  else
+    printf 'Chat no disponible: falta codex o define EQUIPO_CHAT_CMD.\n'; return
+  fi
+  printf '%s\n' "$respuesta"
+  HISTORIAL="$(printf '%s\nUsuario: %s\nAsistente: %s\n' "$HISTORIAL" "$mensaje" "$respuesta" | tail -c 12000)"
+}
+
+HISTORIAL=""
+printf 'Equipo IA %s — escribe /ayuda para ver comandos.\n' "$EQUIPO_VERSION"
+printf 'Modo: %s | Interacción: %s | Repositorio: %s\n\n' "$MODE" "$INTERACTION" "$ROOT"
+
+while true; do
+  printf 'Tú › '
+  if ! IFS= read -r -e linea; then printf '\n'; break; fi
+  [[ -z "${linea//[[:space:]]/}" ]] && continue
+  case "$linea" in
+    /salir|/exit|/quit) break ;;
+    /ayuda|/help) ayuda ;;
+    /chat) INTERACTION=chat; printf 'Modo conversación.\n' ;;
+    /desarrollar|/dev) INTERACTION=desarrollo; printf 'Modo desarrollo.\n' ;;
+    /modo*)
+      nuevo="${linea#/modo}"; nuevo="${nuevo# }"
+      case "$nuevo" in
+        maximo|continuo|auto) MODE="$nuevo"; printf 'Modo: %s\n' "$MODE" ;;
+        "") printf 'Modo actual: %s\n' "$MODE" ;;
+        *) printf 'Modos: maximo, continuo, auto.\n' ;;
+      esac ;;
+    /estado) estado_repo ;;
+    /ultimo) mostrar_ultimo ;;
+    /revision)
+      LAST="$(latest_run)"
+      if [[ -n "$LAST" && -f "$LAST/revision-agy.txt" ]]; then cat "$LAST/revision-agy.txt"; else printf 'No hay revisión.\n'; fi ;;
+    /diff)
+      LAST="$(latest_run)"
+      if [[ -n "$LAST" && -f "$LAST/cambios.patch" ]]; then cat "$LAST/cambios.patch"; else printf 'No hay parche.\n'; fi ;;
+    /aplicar) aplicar ;;
+    /\*) printf 'Comando desconocido. Usa /ayuda.\n' ;;
+    *)
+      if [[ "$INTERACTION" == chat ]]; then
+        chat "$linea"
+      else
+        ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+        ROOT="${ROOT:-$PWD}"
+        ANTES="$(latest_run)"
+        bash "$ORCH" --modo "$MODE" "$linea"
+        DESPUES="$(latest_run)"
+        if [[ -n "$DESPUES" && "$DESPUES" != "$ANTES" ]]; then
+          LAST="$DESPUES"
+          printf '\nEstado: %s\nActa: %s/acta.md\n' "$(cat "$LAST/estado-final.txt" 2>/dev/null || echo '?')" "$LAST"
+        fi
+      fi ;;
+  esac
+done

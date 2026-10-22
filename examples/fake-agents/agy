@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Revisor simulado. Emite el veredicto con el nonce que recibe del orquestador.
+set -Eeuo pipefail
+: "${EQUIPO_NONCE:?fake-agy: falta EQUIPO_NONCE}"
+printf 'Revisión simulada: el parche parece correcto.\n'
+printf 'No se detectan rutas protegidas modificadas.\n\n'
+printf 'VEREDICTO[%s]: %s\n' "$EQUIPO_NONCE" "${EQUIPO_FAKE_VERDICT:-APROBADO}"

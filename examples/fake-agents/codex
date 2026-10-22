@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Agente programador simulado. No usa red ni claves.
+# Variables: EQUIPO_FAKE_FIX (archivo fijo), EQUIPO_FAKE_MODE (fix|noop|break|modify-test).
+set -Eeuo pipefail
+cat >/dev/null || true
+
+mode="${EQUIPO_FAKE_MODE:-fix}"
+fix="${EQUIPO_FAKE_FIX:-}"
+
+case "$mode" in
+  fix)
+    [[ -n "$fix" && -f "$fix" ]] || { echo "fake-codex: falta EQUIPO_FAKE_FIX" >&2; exit 1; }
+    cp "$fix" ./index.js
+    printf 'fake-codex: parche aplicado\n' ;;
+  noop)
+    printf 'fake-codex: sin cambios\n' ;;
+  break)
+    printf 'function greet() { return "roto"; }\nmodule.exports = { greet };\n' > ./index.js
+    printf 'fake-codex: implementación rota\n' ;;
+  modify-test)
+    [[ -n "$fix" && -f "$fix" ]] || { echo "fake-codex: falta EQUIPO_FAKE_FIX" >&2; exit 1; }
+    cp "$fix" ./index.js
+    printf '\n// prueba tocada por el agente\n' >> ./test.js
+    printf 'fake-codex: parche + prueba modificada\n' ;;
+  *)
+    echo "fake-codex: modo desconocido: $mode" >&2; exit 1 ;;
+esac

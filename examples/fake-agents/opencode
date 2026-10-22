@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Programador simulado para el modo continuo.
+set -Eeuo pipefail
+: "${EQUIPO_FAKE_FIX:?fake-opencode: falta EQUIPO_FAKE_FIX}"
+cp "$EQUIPO_FAKE_FIX" ./index.js
+printf 'fake-opencode: parche aplicado\n'

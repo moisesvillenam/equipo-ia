@@ -1,0 +1,39 @@
+# Artefactos locales de Equipo IA
+.estado/
+estado/
+actas/
+*.log
+
+# Configuración local
+.env
+config.env
+.env.*
+
+# Node
+node_modules/
+coverage/
+dist/
+build/
+.npm/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# Editores y sistema
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/

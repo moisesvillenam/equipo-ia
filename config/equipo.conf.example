@@ -1,0 +1,54 @@
+# Equipo IA 4.3 — configuración de ejemplo.
+# Copia este archivo a:
+#   ${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env
+# Las variables de entorno tienen prioridad sobre este archivo.
+
+# Modo por defecto: maximo (Codex), continuo (OpenCode) o auto.
+EQUIPO_MODE=auto
+
+# Correcciones máximas tras el primer parche (0-5).
+EQUIPO_MAX_RETRIES=2
+
+# Tiempo máximo por agente y por ejecución de pruebas, en segundos.
+EQUIPO_TIMEOUT=900
+EQUIPO_TEST_TIMEOUT=180
+
+# Tamaño máximo del parche y del prompt de revisión, en bytes.
+EQUIPO_DIFF_MAX=100000
+EQUIPO_PROMPT_MAX=120000
+
+# Programa los agentes integrados.
+# maximo usa codex; continuo usa opencode. También: command (ver docs/adaptadores.md).
+# EQUIPO_PROGRAMMER=codex
+# EQUIPO_CODEX_MODEL=
+# EQUIPO_MODEL=
+
+# Revisor: auto, agy, command o none.
+EQUIPO_REVIEWER=auto
+# EQUIPO_REVIEW_MODEL=
+
+# Segunda opinión opcional (no participa en la validación).
+EQUIPO_SECOND_OPINION=no
+# EQUIPO_SECOND_OPINION_CMD=
+
+# Comando de pruebas. Si se deja vacío, se detecta npm/pytest/testthat.
+# Ejemplos:
+#   EQUIPO_TEST_CMD="npm test"
+#   EQUIPO_TEST_CMD="python3 -m pytest -q"
+#   EQUIPO_TEST_CMD="Rscript -e 'testthat::test_dir(\"tests/testthat\")'"
+EQUIPO_TEST_CMD=
+
+# Autorización para npm ci: si, no o preguntar.
+EQUIPO_NPM_CI=preguntar
+
+# Ejecutar también las pruebas del commit base (recomendado).
+EQUIPO_BASE_TESTS=si
+
+# Rutas que el agente no debe modificar para "hacer pasar" las pruebas.
+# case-glob de Bash, separado por espacios. * también cruza /.
+EQUIPO_PROTECTED_PATHS="tests/* test/* spec/* __tests__/* test test.js */test.js spec.js */spec.js *.test.js *.spec.js *.test.ts *.spec.ts *.test.tsx *.spec.tsx pytest.ini tox.ini jest.config.* vitest.config.* playwright.config.* package.json package-lock.json pnpm-lock.yaml yarn.lock .github/* Dockerfile docker-compose* auth/* migrations/*"
+
+# Adaptadores personalizados (opcionales). Reciben:
+#   EQUIPO_PROMPT_FILE, EQUIPO_CWD, EQUIPO_ROLE y EQUIPO_NONCE (si aplica).
+# EQUIPO_PROGRAMMER_CMD="mi-agente --prompt \"\$EQUIPO_PROMPT_FILE\""
+# EQUIPO_REVIEWER_CMD="mi-revisor --prompt \"\$EQUIPO_PROMPT_FILE\""
