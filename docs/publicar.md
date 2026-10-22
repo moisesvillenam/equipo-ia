@@ -8,7 +8,7 @@ No publiques tu correo personal. Configura un correo noreply de GitHub:
 
 ```bash
 git config user.name "Tu Nombre"
-git config user.email "TU_ID+TU_USUARIO@users.noreply.github.com"
+git config user.email "moisesvillenam@users.noreply.github.com"
 ```
 
 Si ya hiciste el commit con otro correo, cámbialo antes de publicar:
@@ -28,7 +28,7 @@ gh repo create equipo-ia --public --source=. --remote=origin --push
 Sin `gh`: crea el repositorio vacío en GitHub y luego:
 
 ```bash
-git remote add origin https://github.com/TU_USUARIO/equipo-ia.git
+git remote add origin https://github.com/moisesvillenam/equipo-ia.git
 git branch -M main
 git push -u origin main
 ```
@@ -47,7 +47,7 @@ privados, logs ni actas.
 
 ## 4. Completar la ficha del repositorio
 
-- Descripción: “Patch-only multi-agent workflow with frozen base tests,
+- Descripción: “Patch-only multi-agent workflow with frozen baseline tests,
   protected test paths, and nonce-bound review.”
 - Temas: `ai-agents`, `code-review`, `git`, `bash`, `developer-tools`,
   `patch`, `testing`.
@@ -58,8 +58,8 @@ privados, logs ni actas.
 ## 5. Release
 
 ```bash
-git tag -a v4.3.0 -m "Equipo IA 4.3.0"
-git push origin v4.3.0
+git tag -a v4.3.1 -m "Equipo IA 4.3.1"
+git push origin v4.3.1
 ```
 
 En GitHub, crea un release a partir del tag y adjunta el `CHANGELOG.md`.

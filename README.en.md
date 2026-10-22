@@ -3,9 +3,8 @@
 **A multi-agent workflow that never touches your repository: it produces a patch, reviews it, and lets you decide.**
 
 Equipo IA is a Bash orchestrator for auditable AI coding work. The agent edits a
-temporary copy; tests run on both the current tree and a clean copy of the base
-commit with the patch applied; test paths are protected; the reviewer must emit a
-nonce-bound verdict. The result is a patch, an evidence record (`acta`), and an
+temporary copy; tests run in three disposable copies (baseline, current, and
+control); test paths are protected; the reviewer must emit a nonce-bound verdict. The result is a patch, an evidence record (`acta`), and an
 explicit state: `VALIDADO`, `SIN_CAMBIOS`, `REVISION_MANUAL`, or `RECHAZADO`.
 
 ## Quick start
@@ -13,7 +12,7 @@ explicit state: `VALIDADO`, `SIN_CAMBIOS`, `REVISION_MANUAL`, or `RECHAZADO`.
 No keys, network, or real agents are required for the demo:
 
 ```bash
-git clone https://github.com/TU_USUARIO/equipo-ia.git
+git clone https://github.com/moisesvillenam/equipo-ia.git
 cd equipo-ia
 ./demo.sh
 ```
@@ -38,14 +37,15 @@ is `VALIDADO`.
 ## Why it is different
 
 1. **Patch-only.** Your working tree is untouched until you apply the patch.
-2. **Frozen base tests.** Tests run in disposable copies of the base commit plus
-   the patch. The base copy restores protected paths from the original commit,
-   so weakened tests and test-config changes are detected.
+2. **Frozen baseline tests.** Tests run in three disposable copies: the baseline
+   (original commit, no patch), the current tree (patch plus the agent's tests),
+   and the control (patch with original tests restored). This separates
+   pre-existing failures from regressions and detects weakened tests.
 3. **Protected test paths.** Changes to tests, locks, CI, auth, and migrations
    force a human review.
 4. **Nonce-bound verdict.** The reviewer must end with
    `VEREDICTO[<nonce>]: APROBADO` or `...: CORRECCIONES`; a diff cannot forge it.
-5. **Evidence.** Patch SHA-256, both test runs, changed files, verdict, nonce,
+5. **Evidence.** Patch SHA-256, all test runs, changed files, verdict, nonce,
    `acta.md`, and `acta.json`.
 6. **Honest states.** Missing tests or an inconclusive review means
    `REVISION_MANUAL`, not a fake `VALIDADO`.
@@ -74,7 +74,8 @@ override the file. Key settings:
 
 - `EQUIPO_MODE`, `EQUIPO_MAX_RETRIES`, `EQUIPO_TIMEOUT`
 - `EQUIPO_TEST_CMD`, `EQUIPO_TEST_TIMEOUT`, `EQUIPO_NPM_CI`
-- `EQUIPO_BASE_TESTS`, `EQUIPO_PROTECTED_PATHS`
+- `EQUIPO_BASE_TESTS`, `EQUIPO_PROTECTED_PATHS`,
+  `EQUIPO_REVIEWER_SKIP_PERMISSIONS`
 - `EQUIPO_PROGRAMMER`, `EQUIPO_REVIEWER`, `EQUIPO_MODEL`
 
 See [docs/configuracion.md](docs/configuracion.md).

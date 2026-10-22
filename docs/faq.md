@@ -9,9 +9,9 @@ estado, pruebas, nonce, commit y limpieza.
 ## ¿Qué diferencia hay entre `REVISION_MANUAL` y `RECHAZADO`?
 
 `RECHAZADO` indica un fallo objetivo: el programador falló, el parche no aplica o
-las pruebas fallaron. `REVISION_MANUAL` indica falta de evidencia o un riesgo que
-requiere una persona: pruebas no disponibles, rutas protegidas modificadas,
-revisor sin veredicto o segunda opinión inconclusa.
+introduce fallos nuevos respecto a la línea base. `REVISION_MANUAL` indica falta
+de evidencia o un riesgo que requiere una persona: pruebas no disponibles, rutas
+protegidas modificadas, posible prueba debilitada o revisor sin veredicto.
 
 ## ¿Puedo usarlo en un repositorio con cambios sin commitear?
 
@@ -25,16 +25,25 @@ Sí, pero define `EQUIPO_TEST_CMD` para que apunte al paquete correcto y ajusta
 
 ## ¿Cómo funcionan las pruebas congeladas si el agente añade pruebas nuevas?
 
-Las pruebas base ejecutan el comando del commit base. Las pruebas actuales se
-ejecutan en una copia del commit base con el parche aplicado y sí incluyen las
-pruebas nuevas. Un `VALIDADO` exige que ambas pasen. Si el agente cambia
-archivos de pruebas, se marca `REVISION_MANUAL`.
+Se ejecutan tres tandas: la línea base (commit original), la actual (parche con
+las pruebas del agente) y el control (parche con las pruebas originales). Las
+pruebas nuevas del agente cuentan en la tanda actual. Un `VALIDADO` exige que no
+haya fallos nuevos respecto a la línea base en la actual ni en el control. Si el
+agente cambia archivos de pruebas, se marca `REVISION_MANUAL`.
 
-## ¿Por qué se ejecutan dos veces las pruebas?
+## ¿Qué pasa si la suite ya estaba roja antes del parche?
 
-Porque una regresión puede aparecer solo al aplicar el parche sobre la base, o el
-agente puede haber debilitado la suite. La segunda tanda es la verificación
-congelada.
+La validación es relativa: se comparan los nombres de las pruebas fallidas contra
+la línea base. Los fallos preexistentes no bloquean; los nuevos sí. Si no se
+pueden identificar los nombres (salida no TAP ni pytest), el estado es
+`REVISION_MANUAL`.
+
+## ¿Por qué se ejecutan tres veces las pruebas?
+
+Porque una regresión puede aparecer solo al aplicar el parche, el agente puede
+haber debilitado la suite, y la base puede haber estado roja antes. La línea base
+da el punto de partida; la actual mide el resultado; el control verifica las
+pruebas originales.
 
 ## ¿Necesito `npm ci`?
 
@@ -45,7 +54,7 @@ pruebas pueden fallar y el estado será `RECHAZADO` o `REVISION_MANUAL`. Tambié
 puedes fijar un comando que use un entorno ya preparado con
 `EQUIPO_TEST_CMD`.
 
-## ¿Puedo desactivar las pruebas base?
+## ¿Puedo desactivar las pruebas de referencia?
 
 Sí:
 
@@ -53,8 +62,10 @@ Sí:
 EQUIPO_BASE_TESTS=no
 ```
 
-Pero entonces el estado nunca será `VALIDADO`; será `REVISION_MANUAL`. La opción
-existe para depurar, no para saltarse la garantía.
+Entonces se omiten la línea base y el control, y las pruebas actuales deben pasar
+para obtener `VALIDADO`. Es más rápido, pero no distingue fallos preexistentes ni
+detecta pruebas debilitadas. La opción existe para depurar o para proyectos donde
+la comparación no es fiable.
 
 ## ¿Cómo añado soporte para otra pila?
 

@@ -26,12 +26,13 @@ la línea.
 | `EQUIPO_PROMPT_MAX` | `120000` | bytes |
 | `EQUIPO_TEST_CMD` | vacío | comando de shell |
 | `EQUIPO_NPM_CI` | `preguntar` | `si`, `no`, `preguntar` |
-| `EQUIPO_BASE_TESTS` | `si` | `si`, `no` |
+| `EQUIPO_BASE_TESTS` | `si` | `si`, `no` (si es `no`, se exigen pruebas actuales verdes) |
 | `EQUIPO_PROTECTED_PATHS` | lista | globs de Bash separados por espacios |
 | `EQUIPO_PROGRAMMER` | según modo | `codex`, `opencode`, `command` |
 | `EQUIPO_PROGRAMMER_CMD` | vacío | comando para `command` |
 | `EQUIPO_REVIEWER` | `auto` | `auto`, `agy`, `command`, `none` |
 | `EQUIPO_REVIEWER_CMD` | vacío | comando para `command` |
+| `EQUIPO_REVIEWER_SKIP_PERMISSIONS` | `si` | `si`, `no` (solo AGY en `--print`) |
 | `EQUIPO_MODEL` | vacío | modelo de OpenCode |
 | `EQUIPO_CODEX_MODEL` | vacío | modelo de Codex |
 | `EQUIPO_REVIEW_MODEL` | vacío | modelo de AGY |
@@ -48,7 +49,7 @@ la línea.
 Si `package.json` tiene un script `test` real, se usa `npm test`. Si hay
 `package-lock.json`, `EQUIPO_NPM_CI=si` ejecuta `npm ci` antes de las pruebas.
 `preguntar` pide autorización; `no` omite la instalación. En proyectos con
-dependencias, se recomienda `si` para ambas copias de pruebas: no se reutiliza
+dependencias, se recomienda `si` para las tres copias de pruebas: no se reutiliza
 `node_modules` del agente, para no validar con dependencias que él haya podido
 modificar.
 
@@ -102,6 +103,27 @@ EQUIPO_PROTECTED_PATHS="$EQUIPO_PROTECTED_PATHS src/config/*"
 
 Un cambio en una ruta protegida no rechaza el parche automáticamente: lo pasa a
 `REVISION_MANUAL` para que una persona decida.
+
+## Pruebas de referencia
+
+Con `EQUIPO_BASE_TESTS=si` (por defecto) se ejecutan tres tandas: línea base
+(commit original sin parche), actual (parche) y control (parche con las pruebas
+originales). La comparación se hace por nombre de prueba y solo bloquean los
+fallos nuevos. Si no se pueden identificar los nombres, el estado es
+`REVISION_MANUAL`.
+
+Con `EQUIPO_BASE_TESTS=no` se omiten la línea base y el control: las pruebas
+actuales deben pasar para validar. Es más rápido, pero no distingue fallos
+preexistentes ni detecta pruebas debilitadas.
+
+## Revisor AGY en modo headless
+
+`agy --print` no puede abrir un diálogo de permisos: cualquier comando requerido
+se deniega y el revisor termina sin veredicto. Por eso, con
+`EQUIPO_REVIEWER_SKIP_PERMISSIONS=si` (por defecto) se añade
+`--dangerously-skip-permissions`. El revisor sigue ejecutándose con
+`--mode plan --sandbox` (solo lectura). Si prefieres no usarlo, ponlo en `no` y
+configura las reglas de permisos de AGY, o usa un revisor propio.
 
 ## Ejemplos de configuración
 

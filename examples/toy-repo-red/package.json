@@ -1,0 +1,9 @@
+{
+  "name": "equipo-ia-toy-repo-red",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repositorio de juguete con una prueba que ya falla antes del parche.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

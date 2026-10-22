@@ -25,6 +25,9 @@ EQUIPO_PROMPT_MAX=120000
 
 # Revisor: auto, agy, command o none.
 EQUIPO_REVIEWER=auto
+# AGY en --print no puede pedir permisos. Con `si` se añade
+# --dangerously-skip-permissions (sigue en modo plan y sandbox).
+EQUIPO_REVIEWER_SKIP_PERMISSIONS=si
 # EQUIPO_REVIEW_MODEL=
 
 # Segunda opinión opcional (no participa en la validación).
@@ -41,7 +44,8 @@ EQUIPO_TEST_CMD=
 # Autorización para npm ci: si, no o preguntar.
 EQUIPO_NPM_CI=preguntar
 
-# Ejecutar también las pruebas del commit base (recomendado).
+# Ejecutar línea base (commit original) y control (parche + pruebas originales).
+# Si es `no`, se exige que las pruebas actuales pasen.
 EQUIPO_BASE_TESTS=si
 
 # Rutas que el agente no debe modificar para "hacer pasar" las pruebas.

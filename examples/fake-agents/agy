@@ -2,6 +2,9 @@
 # Revisor simulado. Emite el veredicto con el nonce que recibe del orquestador.
 set -Eeuo pipefail
 : "${EQUIPO_NONCE:?fake-agy: falta EQUIPO_NONCE}"
+if [[ -n "${EQUIPO_FAKE_AGY_ARGS:-}" ]]; then
+  printf '%s\n' "$@" > "$EQUIPO_FAKE_AGY_ARGS"
+fi
 printf 'Revisión simulada: el parche parece correcto.\n'
 printf 'No se detectan rutas protegidas modificadas.\n\n'
 printf 'VEREDICTO[%s]: %s\n' "$EQUIPO_NONCE" "${EQUIPO_FAKE_VERDICT:-APROBADO}"

@@ -5,7 +5,7 @@
 Un agente puede producir un parche rápido. Equipo IA añade:
 
 - ejecución sobre una copia, no sobre el árbol real;
-- pruebas actuales y del commit base;
+- línea base, pruebas actuales y control;
 - detección de cambios en rutas protegidas;
 - revisión con nonce;
 - acta y estados explícitos.
@@ -15,7 +15,7 @@ Un agente puede producir un parche rápido. Equipo IA añade:
 La CI responde “¿pasan las pruebas de este commit?”. Equipo IA responde además:
 
 - ¿el parche se aplica sobre la base?
-- ¿las pruebas de la base siguen pasando con el parche?
+- ¿la línea base, las pruebas actuales y el control son coherentes con el parche?
 - ¿el agente tocó las pruebas o la configuración?
 - ¿un revisor independiente aprobó el diff?
 - ¿qué evidencia queda de todo eso?
@@ -32,7 +32,7 @@ herramientas. Equipo IA se centra en una **política de aceptación**:
 |---|---|---|
 | Objetivo | Coordinar agentes | Validar un parche |
 | Salida | Conversación / acciones | Parche + acta |
-| Pruebas | Depende del agente | Actuales + base congelada |
+| Pruebas | Depende del agente | Línea base + actuales + control |
 | Rutas protegidas | Poco común | Sí, por defecto |
 | Veredicto | Texto libre | Nonce + formato exigido |
 | Aplicación | Automática o manual | Manual, con comprobaciones |
@@ -50,7 +50,7 @@ modesta: hacer visible lo que se verificó y lo que no.
 Lo novedoso no es “usar varios agentes”. Es la combinación de:
 
 1. parche aislado contra un commit base;
-2. pruebas congeladas sobre la base + parche;
+2. pruebas congeladas: línea base, actuales y control;
 3. rutas protegidas que fuerzan revisión humana;
 4. veredicto ligado a un nonce generado después del parche;
 5. estados honestos y acta con límites explícitos.

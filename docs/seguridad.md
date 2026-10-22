@@ -8,7 +8,7 @@ injection o intentar ocultar un fallo. No asume que el agente sea de confianza.
 | Amenaza | Control | Límite |
 |---|---|---|
 | El agente debilita pruebas | Rutas protegidas; cambio a `REVISION_MANUAL`. | No impide cambios en archivos no protegidos. |
-| El agente cambia el comando de pruebas | Las pruebas base usan la configuración del commit base. | Un comando personalizado puede seguir siendo dependiente del entorno. |
+| El agente cambia el comando de pruebas | El control usa la configuración del commit base. | Un comando personalizado puede seguir siendo dependiente del entorno. |
 | El agente afirma que todo pasa | Se ejecutan las pruebas y se guardan logs. | Una suite mala puede dar falsos positivos. |
 | Un diff incluye un veredicto falso | Nonce generado después del parche; se extrae la última línea válida. | El revisor podría ser manipulado para emitir el veredicto. |
 | El agente modifica el repositorio real | Trabaja sobre una copia; `/aplicar` exige confirmación. | El agente conserva los permisos del usuario. |

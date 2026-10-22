@@ -3,7 +3,7 @@
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -uo pipefail
 
-EQUIPO_VERSION="4.3.0"
+EQUIPO_VERSION="4.3.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"
@@ -115,8 +115,14 @@ aplicar() {
   [[ -n "$nonce" ]] || { printf 'Falta el nonce del veredicto.\n'; return 1; }
   ultima="$(grep -Eo "VEREDICTO\\[$nonce\\]: (APROBADO|CORRECCIONES)" "$run/revision-agy.txt" 2>/dev/null | tail -1 || true)"
   [[ "$ultima" == "VEREDICTO[$nonce]: APROBADO" ]] || { printf 'El veredicto con nonce no es válido.\n'; return 1; }
-  [[ "$(grep '^ESTADO=' "$run/pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas actuales no están aprobadas.\n'; return 1; }
-  [[ "$(grep '^ESTADO=' "$run/base-pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas del commit base no están aprobadas.\n'; return 1; }
+  if [[ -f "$run/validacion.txt" ]]; then
+    [[ "$(grep '^REGRESIONES=' "$run/validacion.txt" | cut -d= -f2)" == "0" ]] || { printf 'Hay fallos nuevos respecto a la línea base.\n'; return 1; }
+    [[ "$(grep '^REGRESIONES_CONTROL=' "$run/validacion.txt" | cut -d= -f2)" == "0" ]] || { printf 'El control detecta fallos nuevos.\n'; return 1; }
+    [[ "$(grep '^PRUEBA_DEBILITADA=' "$run/validacion.txt" | cut -d= -f2)" == "0" ]] || { printf 'Posible prueba debilitada.\n'; return 1; }
+  else
+    [[ "$(grep '^ESTADO=' "$run/pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas actuales no están aprobadas.\n'; return 1; }
+    [[ "$(grep '^ESTADO=' "$run/base-pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)" == "APROBADO" ]] || { printf 'Las pruebas del commit base no están aprobadas.\n'; return 1; }
+  fi
   [[ -f "$run/rutas-protegidas.txt" && ! -s "$run/rutas-protegidas.txt" ]] || { printf 'Hay rutas protegidas modificadas.\n'; return 1; }
   [[ "$(cat "$run/origen.txt" 2>/dev/null || true)" == "$root" ]] || { printf 'La ejecución pertenece a otro repositorio.\n'; return 1; }
   [[ "$(cat "$run/commit-origen.txt" 2>/dev/null || true)" == "$(git rev-parse HEAD)" ]] || { printf 'El commit actual no es el commit base de la ejecución.\n'; return 1; }

@@ -1,5 +1,41 @@
 # Changelog
 
+## 4.3.1 — 2026-10-22
+
+Correcciones a partir de una ejecución real sobre un repositorio con la suite
+desactualizada.
+
+### Corregido
+
+- El revisor AGY en modo `--print` recibe `--dangerously-skip-permissions` por
+  defecto. Sin esa opción, cualquier comando requerido se denegaba y no había
+  veredicto. Sigue en `--mode plan` y `--sandbox`; se puede desactivar con
+  `EQUIPO_REVIEWER_SKIP_PERMISSIONS=no`.
+- La validación distingue fallos preexistentes de regresiones: se añade una
+  tercera tanda con el commit original sin parche (línea base). El parche solo se
+  rechaza por fallos nuevos.
+- Si la línea base ya estaba roja, el programador ya no gasta rondas intentando
+  arreglar pruebas que no rompió.
+- Un fallo del revisor (`INDETERMINADO`) ya no dispara una corrección del
+  programador: pasa directamente a `REVISION_MANUAL`.
+- `/aplicar` recompueba las regresiones, el control y la posible prueba
+  debilitada mediante `validacion.txt`.
+
+### Añadido
+
+- Artefactos `linea-base-pruebas-*`, `fallos-*.txt` y `validacion.txt`.
+- Campos `baseline_tests`, `control_tests`, `baseline`, `new_failures`,
+  `control_new_failures`, `fixed_failures` y `weakened_test` en `acta.json`.
+- Repositorio de juguete con línea base roja y pruebas específicas de regresión.
+- ADR 0005: validación relativa a la línea base.
+
+### Cambiado
+
+- `VALIDADO` significa “sin fallos nuevos respecto a la línea base (actual y
+  control)”, no “todas las pruebas pasan”.
+- `EQUIPO_BASE_TESTS=no` omite línea base y control, y exige pruebas actuales
+  verdes.
+
 ## 4.3.0 — 2026-10-22
 
 Primera versión pública de Equipo IA.

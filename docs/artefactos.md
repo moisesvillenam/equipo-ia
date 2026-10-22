@@ -27,10 +27,18 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia/ejecucion_YYYYMMDD_HHMMSS_XXXXXX
 | `pruebas-resultado.txt` | Resultado de las pruebas actuales (copia de compatibilidad). |
 | `actual-pruebas-resultado.txt` | Resultado estructurado de las pruebas actuales. |
 | `actual-pruebas.log` | Log de las pruebas actuales. |
-| `base-pruebas-resultado.txt` | Resultado de las pruebas del commit base + parche, con rutas protegidas restauradas. |
-| `base-pruebas.log` | Log de las pruebas congeladas. |
+| `base-pruebas-resultado.txt` | Resultado del control: parche con las pruebas originales restauradas. |
+| `base-pruebas.log` | Log del control. |
+| `linea-base-pruebas-resultado.txt` | Resultado de la línea base: commit original sin parche. |
+| `linea-base-pruebas.log` | Log de la línea base. |
+| `fallos-actual.txt`, `fallos-base.txt`, `fallos-linea-base.txt` | Nombres de pruebas fallidas extraídos de cada log. |
+| `fallos-nuevos.txt` | Fallos actuales que no estaban en la línea base. |
+| `fallos-control-nuevos.txt` | Fallos del control que no estaban en la línea base. |
+| `fallos-corregidos.txt` | Fallos de la línea base que el parche deja de reproducir. |
+| `validacion.txt` | Resumen que `/aplicar` recompueba (regresiones, control, prueba debilitada). |
 | `actual-ronda-N/` | Copia desechable del commit base + parche usada para las pruebas actuales. |
-| `verificacion-ronda-N/` | Copia del commit base + parche con las rutas protegidas restauradas. |
+| `linea-base-ronda-N/` | Copia desechable del commit original, sin parche. |
+| `verificacion-ronda-N/` | Copia del commit base + parche con las rutas protegidas restauradas (control). |
 | `revisor-dir/` | Directorio aislado donde se ejecuta el revisor. |
 | `segunda-opinion-dir/` | Directorio aislado donde se ejecuta la segunda opinión. |
 | `archivos-cambiados.txt` | Rutas modificadas por el agente. |
@@ -42,8 +50,8 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia/ejecucion_YYYYMMDD_HHMMSS_XXXXXX
 
 ## Formato de resultados de pruebas
 
-`actual-pruebas-resultado.txt` y `base-pruebas-resultado.txt` usan líneas
-`CLAVE=VALOR`:
+`actual-pruebas-resultado.txt`, `base-pruebas-resultado.txt` y
+`linea-base-pruebas-resultado.txt` usan líneas `CLAVE=VALOR`:
 
 ```text
 ESTADO=APROBADO
@@ -62,7 +70,7 @@ Campos principales:
 ```json
 {
   "schema": "equipo-ia/acta/v1",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "run": "/ruta/ejecucion_...",
   "timestamp": "2026-01-01T00:00:00Z",
   "project": "/ruta/repo",
@@ -75,8 +83,16 @@ Campos principales:
   "patch_bytes": 123,
   "changed_files": ["index.js"],
   "protected_paths": [],
+  "baseline_tests": "ESTADO=APROBADO",
   "current_tests": "ESTADO=APROBADO",
-  "base_tests": "ESTADO=APROBADO",
+  "control_tests": "ESTADO=APROBADO",
+  "baseline": "verde",
+  "baseline_failures": [],
+  "control_failures": [],
+  "new_failures": [],
+  "control_new_failures": [],
+  "fixed_failures": [],
+  "weakened_test": 0,
   "verdict": "APROBADO",
   "nonce": "…",
   "state": "VALIDADO",

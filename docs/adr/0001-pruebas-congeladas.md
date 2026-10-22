@@ -1,5 +1,10 @@
 # ADR 0001: ejecutar pruebas sobre el commit base
 
+> **Actualizado por [ADR 0005](0005-validacion-relativa.md).** Desde 4.3.1 se
+> ejecutan tres tandas: línea base sin parche, actual y control. La tanda de
+> control descrita aquí se conserva; la validación ya no exige que todas las
+> pruebas pasen, sino que no haya fallos nuevos respecto a la línea base.
+
 ## Contexto
 
 Un agente puede modificar las pruebas o el comando de pruebas para que el parche

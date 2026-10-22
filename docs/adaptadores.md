@@ -26,10 +26,12 @@ trabajo.
 ### Revisor AGY
 
 ```bash
-agy --mode plan --sandbox --print-timeout 15m --print "$prompt"
+agy --mode plan --sandbox --print-timeout 15m \
+    --dangerously-skip-permissions --print "$prompt"
 ```
 
-AGY recibe el parche, los resultados de pruebas y el nonce. Debe terminar con:
+AGY recibe el parche, los resultados de las tres tandas de pruebas y el nonce.
+Debe terminar con:
 
 ```text
 VEREDICTO[<nonce>]: APROBADO
@@ -42,6 +44,18 @@ VEREDICTO[<nonce>]: CORRECCIONES
 ```
 
 `EQUIPO_REVIEW_MODEL` permite fijar el modelo.
+
+`--dangerously-skip-permissions` está ahí porque `agy --print` no puede mostrar
+un diálogo de permisos: sin él, cualquier comando que necesite el revisor se
+deniega y no produce veredicto. El revisor sigue en `--mode plan` (solo lectura)
+y con `--sandbox`. Para desactivarlo:
+
+```bash
+EQUIPO_REVIEWER_SKIP_PERMISSIONS=no
+```
+
+En ese caso necesitas reglas `permissions.allow` en la configuración de AGY, o
+usar un revisor propio.
 
 ## Comandos propios
 

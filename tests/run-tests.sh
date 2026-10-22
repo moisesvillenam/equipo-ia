@@ -37,6 +37,23 @@ setup_repo() {
   git -C "$destino" -c user.name='Test' -c user.email='test@example.com' commit -qm 'base'
 }
 
+setup_repo_red() {
+  local destino="$1"
+  mkdir -p "$destino"
+  cp -R "$ROOT/examples/toy-repo-red/." "$destino/"
+  git -C "$destino" init -q
+  git -C "$destino" add -A
+  git -C "$destino" -c user.name='Test' -c user.email='test@example.com' commit -qm 'base roja'
+}
+
+setup_repo_verde() {
+  local destino="$1"
+  setup_repo "$destino"
+  cp "$ROOT/examples/fixtures/index.fixed.js" "$destino/index.js"
+  git -C "$destino" add -A
+  git -C "$destino" -c user.name='Test' -c user.email='test@example.com' commit -qm 'base verde'
+}
+
 run_equipo() {
   local repo="$1" estado="$2"
   shift 2
@@ -45,9 +62,10 @@ run_equipo() {
     PATH="$ROOT/examples/fake-agents:$PATH" \
     EQUIPO_CONFIG="$TMP/sin-config" \
     EQUIPO_STATE_DIR="$estado" \
-    EQUIPO_FAKE_FIX="$ROOT/examples/fixtures/index.fixed.js" \
+    EQUIPO_FAKE_FIX="${EQUIPO_FAKE_FIX:-$ROOT/examples/fixtures/index.fixed.js}" \
     EQUIPO_FAKE_MODE="${EQUIPO_FAKE_MODE:-fix}" \
     EQUIPO_FAKE_VERDICT="${EQUIPO_FAKE_VERDICT:-APROBADO}" \
+    EQUIPO_FAKE_AGY_ARGS="$TMP/agy-args.txt" \
     EQUIPO_NPM_CI=no \
     EQUIPO_TIMEOUT=60 \
     EQUIPO_TEST_TIMEOUT=60 \
@@ -78,6 +96,9 @@ assert_file "$RUN/acta.md" "camino feliz: acta"
 if command -v python3 >/dev/null 2>&1; then
   if python3 -m json.tool "$RUN/acta.json" >/dev/null 2>&1; then ok "camino feliz: acta.json válido"; else not_ok "camino feliz: acta.json inválido"; fi
 fi
+assert_contains "$TMP/agy-args.txt" "--dangerously-skip-permissions" "revisor agy: permisos automáticos en modo headless"
+assert_contains "$RUN/validacion.txt" "REGRESIONES=0" "camino feliz: validación sin regresiones"
+assert_contains "$RUN/validacion.txt" "PRUEBA_DEBILITADA=0" "camino feliz: sin prueba debilitada"
 
 # 1b. /aplicar de la consola.
 set +e
@@ -134,8 +155,8 @@ assert_eq "REVISION_MANUAL" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)"
 assert_contains "$RUN/actual-pruebas-resultado.txt" "ESTADO=APROBADO" "prueba debilitada: actual pasa"
 assert_contains "$RUN/base-pruebas-resultado.txt" "ESTADO=FALLIDO" "prueba debilitada: base falla"
 
-# 4. Pruebas fallidas y correcciones agotadas.
-setup_repo "$TMP/fallo/repo"
+# 4. Línea base verde, pruebas rotas y correcciones agotadas.
+setup_repo_verde "$TMP/fallo/repo"
 set +e
 EQUIPO_FAKE_MODE=break EQUIPO_FAKE_VERDICT=CORRECCIONES run_equipo "$TMP/fallo/repo" "$TMP/fallo/estado" --si --modo maximo --intentos 1 "Corrige el saludo"
 CODE=$?
@@ -143,6 +164,69 @@ set -e
 RUN="$(latest_run "$TMP/fallo/estado")"
 assert_eq "30" "$CODE" "pruebas fallidas: código de salida"
 assert_eq "RECHAZADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "pruebas fallidas: estado"
+assert_contains "$RUN/linea-base-pruebas-resultado.txt" "ESTADO=APROBADO" "pruebas fallidas: línea base pasa"
+assert_contains "$RUN/motivo.txt" "fallos nuevos" "pruebas fallidas: regresión detectada"
+
+# 4b. Base roja sin regresiones: el parche se valida igualmente.
+setup_repo_red "$TMP/roja-ok/repo"
+set +e
+EQUIPO_FAKE_FIX="$ROOT/examples/fixtures/index.hardened.js" run_equipo "$TMP/roja-ok/repo" "$TMP/roja-ok/estado" --si --modo maximo --intentos 0 "Añade una despedida"
+CODE=$?
+set -e
+RUN="$(latest_run "$TMP/roja-ok/estado")"
+assert_eq "0" "$CODE" "base roja sin regresiones: código de salida"
+assert_eq "VALIDADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "base roja sin regresiones: estado"
+assert_contains "$RUN/base-pruebas-resultado.txt" "ESTADO=FALLIDO" "base roja sin regresiones: base falla"
+assert_contains "$RUN/actual-pruebas-resultado.txt" "ESTADO=FALLIDO" "base roja sin regresiones: actual falla"
+assert_empty "$RUN/fallos-nuevos.txt" "base roja sin regresiones: sin fallos nuevos"
+assert_contains "$RUN/motivo.txt" "la línea base ya fallaba" "base roja sin regresiones: motivo"
+assert_contains "$RUN/acta.md" "Fallos nuevos en las pruebas actuales: \`0\`" "base roja sin regresiones: acta"
+assert_contains "$RUN/prompt-revisor-r0.txt" "Estado de la línea base: roja (comparable)" "base roja sin regresiones: prompt del revisor"
+assert_contains "$RUN/linea-base-pruebas-resultado.txt" "ESTADO=FALLIDO" "base roja sin regresiones: línea base falla"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d["new_failures"]==[] and d["baseline"].startswith("roja") else 1)' "$RUN/acta.json" >/dev/null 2>&1; then
+    ok "base roja sin regresiones: acta.json coherente"
+  else
+    not_ok "base roja sin regresiones: acta.json incoherente"
+  fi
+fi
+
+# 4c. Base roja con regresión nueva: se rechaza y se nombra el fallo.
+setup_repo_red "$TMP/roja-regresion/repo"
+set +e
+EQUIPO_FAKE_MODE=break run_equipo "$TMP/roja-regresion/repo" "$TMP/roja-regresion/estado" --si --modo maximo --intentos 0 "Añade una despedida"
+CODE=$?
+set -e
+RUN="$(latest_run "$TMP/roja-regresion/estado")"
+assert_eq "30" "$CODE" "base roja con regresión: código de salida"
+assert_eq "RECHAZADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "base roja con regresión: estado"
+assert_contains "$RUN/fallos-nuevos.txt" "greet devuelve el saludo con coma" "base roja con regresión: fallo nuevo identificado"
+assert_contains "$RUN/motivo.txt" "fallos nuevos respecto a la línea base" "base roja con regresión: motivo"
+
+# 4d. Línea base roja sin salida TAP y parche que la deja verde: se valida.
+setup_repo "$TMP/roja-sin-tap/repo"
+set +e
+run_equipo "$TMP/roja-sin-tap/repo" "$TMP/roja-sin-tap/estado" --si --modo maximo --intentos 0 "Corrige el saludo"
+CODE=$?
+set -e
+RUN="$(latest_run "$TMP/roja-sin-tap/estado")"
+assert_eq "0" "$CODE" "base roja reparada: código de salida"
+assert_eq "VALIDADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "base roja reparada: estado"
+assert_contains "$RUN/linea-base-pruebas-resultado.txt" "ESTADO=FALLIDO" "base roja reparada: línea base falla"
+assert_contains "$RUN/actual-pruebas-resultado.txt" "ESTADO=APROBADO" "base roja reparada: actual pasa"
+
+# 4e. Pruebas de referencia desactivadas: basta con que pasen las actuales.
+setup_repo_verde "$TMP/sin-referencia/repo"
+set +e
+EQUIPO_BASE_TESTS=no EQUIPO_FAKE_FIX="$ROOT/examples/fixtures/index.hardened.js" \
+  run_equipo "$TMP/sin-referencia/repo" "$TMP/sin-referencia/estado" --si --modo maximo --intentos 0 "Añade una despedida"
+CODE=$?
+set -e
+RUN="$(latest_run "$TMP/sin-referencia/estado")"
+assert_eq "0" "$CODE" "sin referencia: código de salida"
+assert_eq "VALIDADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "sin referencia: estado"
+assert_contains "$RUN/linea-base-pruebas-resultado.txt" "ESTADO=OMITIDO" "sin referencia: línea base omitida"
+assert_contains "$RUN/motivo.txt" "desactivados" "sin referencia: motivo"
 
 # 5. Modo inválido.
 setup_repo "$TMP/invalido/repo"
@@ -159,7 +243,7 @@ bash "$ROOT/equipo-ia.sh" --version > "$TMP/version.txt" 2>&1
 CODE=$?
 set -e
 assert_eq "0" "$CODE" "versión: código de salida"
-assert_contains "$TMP/version.txt" "4.3.0" "versión: contenido"
+assert_contains "$TMP/version.txt" "4.3.1" "versión: contenido"
 set +e
 bash "$ROOT/equipo-ia.sh" --help > "$TMP/ayuda.txt" 2>&1
 CODE=$?

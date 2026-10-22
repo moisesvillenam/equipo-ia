@@ -62,7 +62,7 @@ No relajes una comprobación para que pase una prueba; arregla la causa.
 Mensajes en imperativo y con alcance, por ejemplo:
 
 ```text
-orquestador: no validar si faltan pruebas base
+orquestador: no validar si el revisor no concluye
 docs: explicar el nonce del revisor
 tests: cubrir rutas protegidas anidadas
 ```
