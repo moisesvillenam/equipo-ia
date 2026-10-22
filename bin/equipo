@@ -124,7 +124,7 @@ aplicar() {
     for tanda in actual base; do
       if [[ "$tanda" == actual ]]; then campo=COMPARABLE_ACTUAL; else campo=COMPARABLE_CONTROL; fi
       resultado="$(grep '^ESTADO=' "$run/$tanda-pruebas-resultado.txt" 2>/dev/null | cut -d= -f2)"
-      if [[ "$resultado" != APROBADO && !( "$tanda" == base && "$resultado" == OMITIDO ) ]]; then
+      if [[ "$resultado" != APROBADO && ! ( "$tanda" == base && "$resultado" == OMITIDO ) ]]; then
         [[ "$resultado" == FALLIDO && "$(grep "^$campo=" "$run/validacion.txt" | cut -d= -f2)" == 1 ]] || {
           printf 'No hay evidencia comparable de las pruebas %s. Repite la validación con la versión actual.\n' "$tanda"; return 1;
         }
