@@ -4,6 +4,6 @@
   "private": true,
   "description": "Repositorio de juguete con una prueba que ya falla antes del parche.",
   "scripts": {
-    "test": "node --test"
+    "test": "node test.js"
   }
 }

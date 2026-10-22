@@ -1,5 +1,26 @@
 # Changelog
 
+## 4.3.2 — 2026-10-22
+
+### Corregido
+
+- Un fallo genérico del proceso de pruebas (`ERR_TEST_FAILURE`) ya no permite
+  validar un parche por coincidir con el fallo genérico de la línea base.
+- Las comparaciones con línea base roja requieren informes comparables en
+  ambas tandas. TAP truncado, cancelaciones, fallos agregados, errores de
+  recolección y recuentos incompatibles pasan a `REVISION_MANUAL`.
+- `/aplicar` exige evidencia de comparabilidad cuando las pruebas siguen
+  fallando. Las ejecuciones antiguas sin esa evidencia deben repetirse.
+
+### Pruebas y documentación
+
+- Casos de regresión para fallos de proceso en cada tanda, TAP incompleto,
+  nombres duplicados y aplicación con línea base roja.
+- El ejemplo de base roja ejecuta `node test.js`: conserva las pruebas reales
+  de `node:test` y su salida TAP sin necesitar un proceso hijo de `node --test`.
+- Se aclara que ampliar funcionalidades puede exigir actualizar el contrato
+  de pruebas mediante revisión humana; un fallo nuevo no es preexistente.
+
 ## 4.3.1 — 2026-10-22
 
 Correcciones a partir de una ejecución real sobre un repositorio con la suite

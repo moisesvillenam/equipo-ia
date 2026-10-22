@@ -45,6 +45,18 @@ haber debilitado la suite, y la base puede haber estado roja antes. La línea ba
 da el punto de partida; la actual mide el resultado; el control verifica las
 pruebas originales.
 
+## ¿Por qué una nueva funcionalidad puede quedar rechazada?
+
+Si las pruebas originales pasan y el parche las rompe, son fallos nuevos aunque
+la tarea cambie intencionadamente el comportamiento. Por ejemplo, una prueba
+que exige conservar todo el HTML ya no encaja al añadir botones. Revisa y
+actualiza ese contrato en un cambio separado, con pruebas de la funcionalidad
+nueva. La validación relativa no convierte esos fallos en preexistentes.
+
+Si Node solo informa que falló el archivo o el proceso (`ERR_TEST_FAILURE`),
+no se conocen los resultados individuales: con línea base roja se requiere
+`REVISION_MANUAL`. Revisa el log, las dependencias y los permisos del entorno.
+
 ## ¿Necesito `npm ci`?
 
 Sí, si tu proyecto Node tiene dependencias. Las pruebas se ejecutan en copias

@@ -70,7 +70,7 @@ Campos principales:
 ```json
 {
   "schema": "equipo-ia/acta/v1",
-  "version": "4.3.1",
+  "version": "4.3.2",
   "run": "/ruta/ejecucion_...",
   "timestamp": "2026-01-01T00:00:00Z",
   "project": "/ruta/repo",
@@ -101,6 +101,11 @@ Campos principales:
 ```
 
 ## Cómo inspeccionar
+
+Desde 4.3.2, `validacion.txt` incluye `COMPARABLE_ACTUAL` y
+`COMPARABLE_CONTROL` (0 o 1). Si una tanda sigue fallando, `/aplicar` requiere
+que su comparación sea válida. Un cero en el recuento de regresiones no basta
+cuando la salida de pruebas es incompleta o el proceso falló sin resultados.
 
 ```bash
 equipo                 # consola

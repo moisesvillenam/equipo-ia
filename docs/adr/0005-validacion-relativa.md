@@ -8,10 +8,11 @@ es un **control** para detectar pruebas debilitadas, pero no la línea base: si 
 commit original ya tenía pruebas rojas, el control también fallaba y el parche
 parecía culpable.
 
-En un repositorio real, tres pruebas afirmaban el comportamiento anterior de la
-interfaz. Cualquier cambio que añadiera funciones científicas las hacía fallar.
-El orquestador pidió correcciones al programador, gastó rondas y terminó en
-`RECHAZADO` sin distinguir el fallo preexistente del introducido.
+Una prueba real de ampliación de una calculadora motivó separar estas tandas.
+La ejecución final mostró una línea base verde y tres fallos nuevos con el
+parche: eran incompatibilidades con el contrato de pruebas anterior, no fallos
+preexistentes. La comparación debe conservar esa distinción; actualizar dicho
+contrato requiere revisión humana.
 
 ## Decisión
 
@@ -29,6 +30,12 @@ prueba debilitada.
 La comparación extrae `not ok` de TAP y `FAILED` de pytest. Si no hay nombres de
 prueba comparables, el resultado es `REVISION_MANUAL`; no se asume que no hay
 regresión.
+
+Desde 4.3.2 también se descartan como evidencia comparable los fallos genéricos
+del proceso, cancelaciones, errores de recolección y TAP incompleto o ambiguo.
+Dos ejecuciones que fallan al arrancar el mismo archivo no demuestran que sus
+pruebas individuales tengan el mismo resultado. Los casos TAP anidados con
+fallos se tratan de forma conservadora como revisión manual.
 
 ## Consecuencias
 

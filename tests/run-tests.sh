@@ -192,6 +192,22 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 # 4c. Base roja con regresión nueva: se rechaza y se nombra el fallo.
+# Antes, comprobar que /aplicar exige evidencia nueva para una base roja.
+cp "$RUN/validacion.txt" "$TMP/validacion-roja.txt"
+sed '/^COMPARABLE_/d' "$TMP/validacion-roja.txt" > "$RUN/validacion.txt"
+printf '/aplicar\n/salir\n' | (
+  cd "$TMP/roja-ok/repo"
+  EQUIPO_CONFIG="$TMP/sin-config" EQUIPO_STATE_DIR="$TMP/roja-ok/estado" bash "$ROOT/bin/equipo"
+) > "$TMP/aplicar-legado.out" 2>&1
+assert_contains "$TMP/aplicar-legado.out" "Repite la validación" "aplicar base roja antigua: exige evidencia comparable"
+assert_eq "" "$(git -C "$TMP/roja-ok/repo" status --porcelain)" "aplicar base roja antigua: no modifica el proyecto"
+cp "$TMP/validacion-roja.txt" "$RUN/validacion.txt"
+printf '/aplicar\nAPLICAR\n/salir\n' | (
+  cd "$TMP/roja-ok/repo"
+  EQUIPO_CONFIG="$TMP/sin-config" EQUIPO_STATE_DIR="$TMP/roja-ok/estado" bash "$ROOT/bin/equipo"
+) > "$TMP/aplicar-roja.out" 2>&1
+assert_contains "$TMP/aplicar-roja.out" "Parche aplicado" "aplicar base roja comparable: permitido"
+
 setup_repo_red "$TMP/roja-regresion/repo"
 set +e
 EQUIPO_FAKE_MODE=break run_equipo "$TMP/roja-regresion/repo" "$TMP/roja-regresion/estado" --si --modo maximo --intentos 0 "Añade una despedida"
@@ -228,6 +244,76 @@ assert_eq "VALIDADO" "$(cat "$RUN/estado-final.txt" 2>/dev/null || true)" "sin r
 assert_contains "$RUN/linea-base-pruebas-resultado.txt" "ESTADO=OMITIDO" "sin referencia: línea base omitida"
 assert_contains "$RUN/motivo.txt" "desactivados" "sin referencia: motivo"
 
+# 4f. Los fallos de proceso no demuestran que no hay regresiones.
+# La salida es determinista: cubre también máquinas donde Node sí puede crear
+# procesos hijos. Se prueba cada tanda para que ninguna omita la comprobación.
+cat > "$TMP/fallo-proceso.tap" <<'EOF'
+TAP version 13
+not ok 1 - legacy: el saludo no lleva coma
+  ---
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# fail 1
+EOF
+for tanda in todas linea-base actual verificacion; do
+  setup_repo_red "$TMP/proceso-$tanda/repo"
+  # El comando es el mismo en todas las copias; solo varía la salida simulada.
+  patron="$tanda-*"
+  [[ "$tanda" != todas ]] || patron='*'
+  CMD="case \"\${PWD##*/}\" in $patron) cat '$TMP/fallo-proceso.tap'; exit 1 ;; *) node test.js ;; esac"
+  set +e
+  EQUIPO_FAKE_FIX="$ROOT/examples/fixtures/index.hardened.js" \
+    run_equipo "$TMP/proceso-$tanda/repo" "$TMP/proceso-$tanda/estado" \
+    --si --modo maximo --intentos 0 --test-cmd "$CMD" "Añade una despedida"
+  CODE=$?
+  set -e
+  RUN="$(latest_run "$TMP/proceso-$tanda/estado")"
+  assert_eq "20" "$CODE" "fallo de proceso ($tanda): código manual"
+  assert_eq "REVISION_MANUAL" "$(cat "$RUN/estado-final.txt")" "fallo de proceso ($tanda): nunca validado"
+  assert_contains "$RUN/motivo.txt" "no se pueden comparar" "fallo de proceso ($tanda): motivo"
+done
+
+# 4g. TAP incompleto o con nombres duplicados tampoco es comparable.
+for caso in truncado duplicado; do
+  setup_repo_red "$TMP/tap-$caso/repo"
+  printf 'TAP version 13\nnot ok 1 - repetido\n' > "$TMP/$caso.tap"
+  if [[ "$caso" == duplicado ]]; then
+    printf 'not ok 2 - repetido\n1..2\n# fail 2\n' >> "$TMP/$caso.tap"
+  fi
+  set +e
+  EQUIPO_FAKE_MODE=break run_equipo "$TMP/tap-$caso/repo" "$TMP/tap-$caso/estado" \
+    --si --modo maximo --intentos 0 --test-cmd "cat '$TMP/$caso.tap'; exit 1" "Corrige el saludo"
+  CODE=$?
+  set -e
+  assert_eq "20" "$CODE" "TAP $caso: revisión manual"
+done
+
+# 4h. Pytest: conservar la comparación completa y bloquear informes parciales.
+for caso in completo truncado error; do
+  setup_repo_red "$TMP/pytest-$caso/repo"
+  printf 'FAILED tests/test_example.py::test_legacy - AssertionError\n' > "$TMP/pytest-$caso.log"
+  esperado=20
+  if [[ "$caso" != truncado ]]; then
+    printf '1 failed in 0.02s\n' >> "$TMP/pytest-$caso.log"
+    esperado=0
+  fi
+  if [[ "$caso" == error ]]; then
+    printf 'ERROR tests/test_other.py - ImportError\n' >> "$TMP/pytest-$caso.log"
+    esperado=20
+  fi
+  set +e
+  EQUIPO_FAKE_FIX="$ROOT/examples/fixtures/index.hardened.js" \
+    run_equipo "$TMP/pytest-$caso/repo" "$TMP/pytest-$caso/estado" \
+    --si --modo maximo --intentos 0 --test-cmd "cat '$TMP/pytest-$caso.log'; exit 1" "Añade una despedida"
+  CODE=$?
+  set -e
+  assert_eq "$esperado" "$CODE" "pytest $caso: comparabilidad del informe"
+done
+
 # 5. Modo inválido.
 setup_repo "$TMP/invalido/repo"
 set +e
@@ -243,7 +329,7 @@ bash "$ROOT/equipo-ia.sh" --version > "$TMP/version.txt" 2>&1
 CODE=$?
 set -e
 assert_eq "0" "$CODE" "versión: código de salida"
-assert_contains "$TMP/version.txt" "4.3.1" "versión: contenido"
+assert_contains "$TMP/version.txt" "4.3.2" "versión: contenido"
 set +e
 bash "$ROOT/equipo-ia.sh" --help > "$TMP/ayuda.txt" 2>&1
 CODE=$?

@@ -7,3 +7,6 @@ Un parche que no añada fallos nuevos debe poder validarse. Un parche que rompa
 `greet devuelve el saludo con coma` introduce una regresión y se rechaza.
 
 No se usa en la demo principal; solo en las pruebas de extremo a extremo.
+
+`npm test` ejecuta `node test.js`. Las pruebas siguen usando `node:test` y
+produciendo TAP, pero no necesitan que `node --test` cree un proceso hijo.

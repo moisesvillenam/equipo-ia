@@ -204,6 +204,11 @@ fallos nuevos. La comparación se hace por nombre de prueba (TAP de Node o
 `FAILED` de pytest). Si no se pueden identificar los fallos, el estado es
 `REVISION_MANUAL`.
 
+Desde 4.3.2, los errores de proceso, informes TAP incompletos y recuentos de
+fallos ambiguos tampoco sirven para demostrar que no hay regresiones. Si las
+pruebas siguen fallando, `/aplicar` exige esa evidencia de comparabilidad; una
+ejecución anterior sin ella debe repetirse.
+
 `REVISION_MANUAL` no significa que el parche esté mal: significa que la
 herramienta no tiene evidencia suficiente para validarlo sola.
 

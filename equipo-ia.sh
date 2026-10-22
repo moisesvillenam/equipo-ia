@@ -3,7 +3,7 @@
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -Eeuo pipefail
 
-EQUIPO_VERSION="4.3.1"
+EQUIPO_VERSION="4.3.2"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 
 # La configuración NO pisa variables de entorno ya definidas.
@@ -331,6 +331,35 @@ extraer_fallos() {
     | LC_ALL=C sort -u > "$salida"
 }
 
+fallos_comparables() {
+  local log="$1" fallos="$2" cantidad
+  [[ -s "$log" && -s "$fallos" ]] || return 1
+  cantidad="$(wc -l < "$fallos" | tr -d ' ')"
+  # Un proceso/archivo que no terminó puede ocultar pruebas nuevas fallidas.
+  # No basta con que su nombre coincida en las dos ejecuciones.
+  sed $'s/\033\\[[0-9;]*[A-Za-z]//g' "$log" | awk -v cantidad="$cantidad" '
+    /^TAP version |^not ok/ { tap=1 }
+    /^FAILED[[:space:]]/ { pytest=1 }
+    /[0-9]+ failed/ {
+      for (i=2; i<=NF; i++) {
+        if ($i ~ /^failed[,[:space:]]*$/ && $(i-1) ~ /^[0-9]+$/) {
+          resumen_pytest=1; fallidas_pytest=$(i-1)
+        }
+      }
+    }
+    /ERR_TEST_FAILURE|subtestsFailed|cancelledByParent|hookFailed/ { incompleto=1 }
+    /^[[:space:]]*Bail out!|^[[:space:]]*exitCode:|^[[:space:]]*signal:.*[^~[:space:]]/ { incompleto=1 }
+    /^ERROR[[:space:]]|INTERNALERROR|Interrupted:|interrupting test run/ { incompleto=1 }
+    /^[[:space:]]+not ok/ { incompleto=1 }
+    /^# fail [0-9]+/ { resumen=1; fallidas=$3 }
+    /^# cancelled [1-9]/ { incompleto=1 }
+    END {
+      exit (incompleto || (tap && (!resumen || fallidas != cantidad)) ||
+        (pytest && (!resumen_pytest || fallidas_pytest != cantidad))) ? 1 : 0
+    }
+  '
+}
+
 evaluar_fallos() {
   # Compara contra la línea base (commit original SIN parche). Así se distingue
   # un fallo preexistente de una regresión introducida por el parche. El control
@@ -371,7 +400,9 @@ evaluar_fallos() {
         cp "$RUN/fallos-linea-base.txt" "$RUN/fallos-corregidos.txt"
         COMPARABLE=1
       fi
-    elif ((CUR_STATUS == 0)) && [[ -s "$RUN/fallos-linea-base.txt" && -s "$RUN/fallos-actual.txt" ]]; then
+    elif ((CUR_STATUS == 0)) &&
+      fallos_comparables "$RUN/linea-base-pruebas.log" "$RUN/fallos-linea-base.txt" &&
+      fallos_comparables "$RUN/actual-pruebas.log" "$RUN/fallos-actual.txt"; then
       COMPARABLE=1
       LC_ALL=C comm -13 "$RUN/fallos-linea-base.txt" "$RUN/fallos-actual.txt" > "$RUN/fallos-nuevos.txt"
       LC_ALL=C comm -23 "$RUN/fallos-linea-base.txt" "$RUN/fallos-actual.txt" > "$RUN/fallos-corregidos.txt"
@@ -397,7 +428,9 @@ evaluar_fallos() {
   elif ((LINEA_STATUS == 0)); then
     if ((BASE_STATUS == 1)); then
       COMPARABLE_CONTROL=1
-    elif ((BASE_STATUS == 0)) && [[ -s "$RUN/fallos-linea-base.txt" && -s "$RUN/fallos-base.txt" ]]; then
+    elif ((BASE_STATUS == 0)) &&
+      fallos_comparables "$RUN/linea-base-pruebas.log" "$RUN/fallos-linea-base.txt" &&
+      fallos_comparables "$RUN/base-pruebas.log" "$RUN/fallos-base.txt"; then
       COMPARABLE_CONTROL=1
       LC_ALL=C comm -13 "$RUN/fallos-linea-base.txt" "$RUN/fallos-base.txt" > "$RUN/fallos-control-nuevos.txt"
       REGRESIONES_CONTROL="$(wc -l < "$RUN/fallos-control-nuevos.txt" | tr -d ' ')"
@@ -917,6 +950,8 @@ fi
   printf 'LINEA_BASE=%s\n' "$(baseline_estado)"
   printf 'REGRESIONES=%s\n' "$REGRESIONES"
   printf 'REGRESIONES_CONTROL=%s\n' "$REGRESIONES_CONTROL"
+  printf 'COMPARABLE_ACTUAL=%s\n' "$COMPARABLE"
+  printf 'COMPARABLE_CONTROL=%s\n' "$COMPARABLE_CONTROL"
   printf 'PRUEBA_DEBILITADA=%s\n' "$PRUEBA_DEBILITADA"
   printf 'RUTAS_PROTEGIDAS=%s\n' "$(wc -l < "$RUN/rutas-protegidas.txt" 2>/dev/null | tr -d ' ' || echo 0)"
 } > "$RUN/validacion.txt"

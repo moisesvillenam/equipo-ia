@@ -50,6 +50,11 @@ is `VALIDADO`.
 6. **Honest states.** Missing tests or an inconclusive review means
    `REVISION_MANUAL`, not a fake `VALIDADO`.
 
+Since 4.3.2, process failures, incomplete TAP reports and ambiguous failure
+counts cannot establish that a patch has no regressions. Red baseline
+comparisons require usable evidence from both runs. `/aplicar` also requires
+that evidence when tests still fail; older runs without it must be repeated.
+
 ## Modes
 
 | Mode | Programmer | Reviewer |
