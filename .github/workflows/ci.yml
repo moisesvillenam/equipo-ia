@@ -26,13 +26,19 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Syntax
-        run: bash -n equipo-ia.sh equipo-pruebas.sh bin/equipo install.sh demo.sh tests/run-tests.sh
+        run: |
+          for script in equipo-ia.sh equipo-pruebas.sh equipo-publicar.sh bin/equipo install.sh demo.sh tests/run-tests.sh; do
+            bash -n "$script" || exit 1
+          done
 
       - name: ShellCheck
-        run: shellcheck -S error equipo-ia.sh equipo-pruebas.sh bin/equipo install.sh demo.sh tests/run-tests.sh
+        run: shellcheck -S error equipo-ia.sh equipo-pruebas.sh equipo-publicar.sh bin/equipo install.sh demo.sh tests/run-tests.sh
 
       - name: Tests
         run: ./tests/run-tests.sh
+
+      - name: Publication tests (local Git remotes)
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Secret scan
         run: ./tests/check-secrets.sh

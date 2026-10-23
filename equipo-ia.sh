@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Equipo IA 4.3 — orquestador de parches con pruebas congeladas.
+# Equipo IA 4.4 — orquestador de parches con pruebas congeladas.
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -Eeuo pipefail
 
-EQUIPO_VERSION="4.3.2"
+EQUIPO_VERSION="4.4.0"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 
 # La configuración NO pisa variables de entorno ya definidas.
@@ -62,7 +62,7 @@ HASH_BIN="$(command -v sha256sum || command -v shasum || true)"
 
 uso() {
   cat <<'EOF'
-Equipo IA 4.3 — parche, pruebas congeladas y veredicto.
+Equipo IA 4.4 — parche, pruebas congeladas y veredicto.
 
 Uso:
   equipo-ia.sh [opciones] "tarea"

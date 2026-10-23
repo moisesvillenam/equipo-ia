@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Equipo IA 4.3 — consola interactiva.
+# Equipo IA 4.4 — consola interactiva.
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -uo pipefail
 
-EQUIPO_VERSION="4.3.2"
+EQUIPO_VERSION="4.4.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"
@@ -67,6 +67,8 @@ Comandos:
   /revision              Salida del revisor.
   /diff                  Parche propuesto.
   /aplicar               Aplica el parche VALIDADO (pide confirmación).
+  /publicar              Comprueba pruebas y publica el commit en el remoto Git.
+  /publicar comprobar    Comprueba destino y pruebas sin enviar cambios.
   /salir                 Sale.
 
 En modo desarrollo, escribe una tarea y se ejecutará el equipo.
@@ -77,6 +79,13 @@ case "${1:-}" in
   --help|-h) ayuda; exit 0 ;;
   --version) printf 'Equipo IA %s\n' "$EQUIPO_VERSION"; exit 0 ;;
 esac
+
+publicar() {
+  local script
+  script="$(dirname "$ORCH")/equipo-publicar.sh"
+  [[ -r "$script" ]] || { printf 'Falta equipo-publicar.sh. Actualiza la instalación con install.sh.\n'; return 1; }
+  bash "$script" "$@"
+}
 
 estado_repo() {
   if git rev-parse --show-toplevel >/dev/null 2>&1; then
@@ -193,7 +202,9 @@ while true; do
       LAST="$(latest_run)"
       if [[ -n "$LAST" && -f "$LAST/cambios.patch" ]]; then cat "$LAST/cambios.patch"; else printf 'No hay parche.\n'; fi ;;
     /aplicar) aplicar ;;
-    /\*) printf 'Comando desconocido. Usa /ayuda.\n' ;;
+    /publicar) publicar ;;
+    '/publicar comprobar') publicar --comprobar ;;
+    /*) printf 'Comando desconocido. Usa /ayuda.\n' ;;
     *)
       if [[ "$INTERACTION" == chat ]]; then
         chat "$linea"

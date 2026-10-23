@@ -17,7 +17,7 @@ while (($#)); do
   esac
 done
 
-[[ -f "$ROOT/equipo-ia.sh" && -f "$ROOT/equipo-pruebas.sh" && -f "$ROOT/bin/equipo" ]] || {
+[[ -f "$ROOT/equipo-ia.sh" && -f "$ROOT/equipo-pruebas.sh" && -f "$ROOT/equipo-publicar.sh" && -f "$ROOT/bin/equipo" ]] || {
   echo "Ejecuta install.sh desde el repositorio de Equipo IA." >&2; exit 1;
 }
 
@@ -25,6 +25,7 @@ install -d "$PREFIX/bin" "$PREFIX/share/equipo-ia/config"
 install -m 755 "$ROOT/bin/equipo" "$PREFIX/bin/equipo"
 install -m 755 "$ROOT/equipo-ia.sh" "$PREFIX/share/equipo-ia/equipo-ia.sh"
 install -m 755 "$ROOT/equipo-pruebas.sh" "$PREFIX/share/equipo-ia/equipo-pruebas.sh"
+install -m 755 "$ROOT/equipo-publicar.sh" "$PREFIX/share/equipo-ia/equipo-publicar.sh"
 install -m 644 "$ROOT/config/equipo.conf.example" "$PREFIX/share/equipo-ia/config/equipo.conf.example"
 ln -sf ../share/equipo-ia/equipo-ia.sh "$PREFIX/bin/equipo-ia.sh"
 

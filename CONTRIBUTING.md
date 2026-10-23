@@ -18,9 +18,10 @@ No necesitas claves ni agentes reales para las pruebas: se usan los simulados de
 ## Comprobaciones antes de un PR
 
 ```bash
-bash -n equipo-ia.sh equipo-pruebas.sh bin/equipo install.sh demo.sh tests/run-tests.sh
-shellcheck -S error equipo-ia.sh equipo-pruebas.sh bin/equipo install.sh demo.sh tests/run-tests.sh
+bash -n equipo-ia.sh equipo-pruebas.sh equipo-publicar.sh bin/equipo install.sh demo.sh tests/run-tests.sh
+shellcheck -S error equipo-ia.sh equipo-pruebas.sh equipo-publicar.sh bin/equipo install.sh demo.sh tests/run-tests.sh
 ./tests/run-tests.sh
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 ./tests/check-secrets.sh
 ./demo.sh
 ```

@@ -1,4 +1,4 @@
-# Equipo IA 4.3
+# Equipo IA 4.4
 
 [![CI](https://github.com/moisesvillenam/equipo-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/moisesvillenam/equipo-ia/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -175,7 +175,35 @@ si no se indica `--npm-ci si`, se omite.
 | `/revision` | Salida del revisor. |
 | `/diff` | Parche propuesto. |
 | `/aplicar` | Aplica el parche si está `VALIDADO` y pide `APLICAR`. |
+| `/publicar` | Ejecuta pruebas y publica el commit tras escribir `PUBLICAR`. |
+| `/publicar comprobar` | Comprueba destino y pruebas sin enviar cambios. |
 | `/salir` | Sale. |
+
+### Publicar los cambios del proyecto
+
+Después de aplicar y revisar los cambios, guárdalos con `git add` y `git commit`.
+En la consola `equipo`, ejecuta `/publicar`: muestra el proyecto, commit, URL y
+rama de destino, ejecuta las pruebas y pide escribir `PUBLICAR` antes del envío.
+Usa el upstream de la rama actual; si no existe, usa `origin` con el mismo nombre
+de rama. El remoto y la autenticación de Git deben estar configurados previamente.
+
+`/publicar comprobar` ejecuta las comprobaciones locales sin contactar al remoto.
+No verifica las credenciales ni la disponibilidad del servidor. Para actualizar
+una instalación existente, vuelve a ejecutar `./install.sh` y abre otra sesión de
+`equipo`.
+
+La publicación requiere un árbol limpio y pruebas aprobadas en la versión actual,
+incluso si un parche fue validado previamente con fallos preexistentes. No crea
+commits, no fuerza actualizaciones y no envía otras ramas ni etiquetas. Conserva
+el resultado y los registros bajo `publicacion_*` en el directorio de estado.
+Usa las dependencias instaladas; solo ejecuta `npm ci` si se configuró
+`EQUIPO_NPM_CI=si`. Si faltan dependencias, instálalas antes de publicar.
+Si el remoto tiene cambios incompatibles, Git rechaza el envío: intégralos y vuelve
+a ejecutar las pruebas antes de publicar.
+
+Este comando publica código en Git. Para que aparezca una web pública, el
+repositorio debe tener un hosting o despliegue configurado; el comando no crea ese
+servicio ni afirma que un despliegue haya terminado.
 
 ## Modos
 

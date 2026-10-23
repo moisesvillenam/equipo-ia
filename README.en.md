@@ -1,4 +1,4 @@
-# Equipo IA 4.3
+# Equipo IA 4.4
 
 **A multi-agent workflow that never touches your repository: it produces a patch, reviews it, and lets you decide.**
 
@@ -117,3 +117,21 @@ The tests use fake agents in `examples/fake-agents/`; no network or API keys.
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Publish project commits (4.4.0)
+
+After reviewing and committing your changes, run `/publicar` inside `equipo`.
+It shows the exact commit, remote URL and target branch, runs the current tests,
+and asks you to type `PUBLICAR` before pushing. It uses the current branch's
+upstream, or `origin` with the same branch name when no upstream exists.
+`/publicar comprobar` checks the destination and tests locally without pushing;
+it does not check remote access or credentials.
+
+Publishing requires a clean working tree and passing tests. It does not commit
+files, force a push, or send additional branches or tags. Reports are stored
+in `publicacion_*` under the state directory. Existing dependencies are used
+unless `EQUIPO_NPM_CI=si` explicitly authorizes installation.
+
+Run `./install.sh` again and restart `equipo` to update your installation.
+This publishes code to Git; a public website requires a separately configured
+hosting service or deployment workflow.

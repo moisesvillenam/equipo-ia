@@ -329,7 +329,7 @@ bash "$ROOT/equipo-ia.sh" --version > "$TMP/version.txt" 2>&1
 CODE=$?
 set -e
 assert_eq "0" "$CODE" "versión: código de salida"
-assert_contains "$TMP/version.txt" "4.3.2" "versión: contenido"
+assert_contains "$TMP/version.txt" "4.4.0" "versión: contenido"
 set +e
 bash "$ROOT/equipo-ia.sh" --help > "$TMP/ayuda.txt" 2>&1
 CODE=$?

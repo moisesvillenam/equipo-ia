@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.4.0 — 2026-10-23
+
+- `/publicar` muestra commit y destino, exige pruebas aprobadas y confirmación,
+  y envía exclusivamente ese commit a la rama remota, sin forzar ni enviar etiquetas.
+- `/publicar comprobar` permite revisar destino y pruebas sin enviar cambios.
+- Se rechazan cambios pendientes, HEAD separado, múltiples destinos y cambios del
+  commit, rama o destino durante la comprobación. Se guardan informes de publicación.
+- El instalador incluye el publicador. Pruebas con remotos Git locales en CI.
+- Los comandos desconocidos que empiezan por `/` ya no se envían al programador.
+
 ## 4.3.2 — 2026-10-22
 
 ### Corregido

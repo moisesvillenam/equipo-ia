@@ -58,8 +58,8 @@ privados, logs ni actas.
 ## 5. Release
 
 ```bash
-git tag -a v4.3.2 -m "Equipo IA 4.3.2"
-git push origin v4.3.2
+git tag -a v4.4.0 -m "Equipo IA 4.4.0"
+git push origin v4.4.0
 ```
 
 En GitHub, crea un release a partir del tag y adjunta el `CHANGELOG.md`.
