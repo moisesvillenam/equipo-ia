@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.5.0 — 2026-10-23
+
+- Aplicación Windows Forms con preparación guiada de WSL/Ubuntu, instalación y
+  conexión oficial de Codex, selector de proyecto, tareas, resultados e historial.
+- Puente Python sin dependencias externas ni servidor: trabajos con estado propio,
+  exclusión mutua, comprobación de huella y aplicación mediante la consola existente.
+- Ejemplo simulado persistente y guardado opcional de una versión local tras aplicar,
+  con rechazo si hubo cambios adicionales.
+- Adaptador de revisión Codex de solo lectura mediante el contrato `command`.
+- Instalación por usuario, paquete ZIP, guía y pruebas Linux/Windows para la interfaz.
+- Sin cambios en la política de validación de la consola. El mantenedor informó haberla probado en Windows;
+  se mantiene como vista previa mientras se documenta la aceptación completa.
+
 ## 4.4.0 — 2026-10-23
 
 - `/publicar` muestra commit y destino, exige pruebas aprobadas y confirmación,

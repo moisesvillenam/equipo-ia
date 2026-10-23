@@ -1,4 +1,4 @@
-# Equipo IA 4.4
+# Equipo IA 4.5
 
 [![CI](https://github.com/moisesvillenam/equipo-ia/actions/workflows/ci.yml/badge.svg)](https://github.com/moisesvillenam/equipo-ia/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -14,6 +14,17 @@ parche aplicable, un acta y un estado explícito: `VALIDADO`, `SIN_CAMBIOS`,
 
 No es otro wrapper de agentes. Es una **política de validación** alrededor de
 ellos.
+
+## Interfaz para Windows (vista previa)
+
+La nueva interfaz local permite preparar Ubuntu, conectar Codex, elegir un proyecto,
+pedir una mejora, revisar el resultado y aplicar y guardar los cambios con botones.
+Incluye un ejemplo simulado sin cuenta. El motor sigue ejecutándose en WSL y
+conserva sus controles. Se distribuye como vista previa; no es un instalador `.exe` firmado.
+
+Después de descargar y extraer el proyecto, abre
+`windows/Instalar Equipo IA.cmd` o `windows/Abrir Equipo IA.cmd`.
+Consulta la [guía de Windows](docs/windows.md) para requisitos, instalación y uso.
 
 ---
 

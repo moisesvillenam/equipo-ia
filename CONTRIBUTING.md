@@ -26,6 +26,19 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 ./demo.sh
 ```
 
+Para cambios en la interfaz Windows, ejecuta además:
+
+```bash
+python3 -m unittest discover -s desktop -p 'test_*.py' -v
+bash -n desktop/setup.sh desktop/revisor-codex.sh
+shellcheck -S error desktop/setup.sh desktop/revisor-codex.sh
+python3 desktop/package_windows.py
+```
+
+En Windows, `windows/Test-Desktop.ps1` comprueba sintaxis, argumentos y construcción
+de la ventana; requiere Python para la prueba de transporte. La aceptación completa
+de WSL y cuentas reales está descrita en [docs/windows.md](docs/windows.md).
+
 Si no tienes ShellCheck, instálalo con el gestor de tu sistema. En CI se ejecuta
 con severidad `error`.
 

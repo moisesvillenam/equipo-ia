@@ -1,4 +1,4 @@
-# Equipo IA 4.4
+# Equipo IA 4.5
 
 **A multi-agent workflow that never touches your repository: it produces a patch, reviews it, and lets you decide.**
 
@@ -135,3 +135,16 @@ unless `EQUIPO_NPM_CI=si` explicitly authorizes installation.
 Run `./install.sh` again and restart `equipo` to update your installation.
 This publishes code to Git; a public website requires a separately configured
 hosting service or deployment workflow.
+
+## Windows desktop preview (4.5.0)
+
+The Windows ZIP includes a graphical interface, per-user installer and desktop
+shortcut. The engine runs in Ubuntu/WSL. You can prepare the environment, choose
+a Git project, request a change, review and apply the patch, and save a local
+commit. A simulated example is available without an AI account.
+
+Extract the ZIP, then open `windows/Instalar Equipo IA.cmd`. See
+[the Windows guide](docs/windows.md) for setup and testing scope. The maintainer
+reported testing the application on Windows; the full acceptance checklist has
+not been recorded. Windows remains a preview. Publishing remains available from
+the console; the window saves local commits.
