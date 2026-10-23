@@ -18,20 +18,34 @@ foreach ($name in @('Quote-NativeArgument', 'New-NativeProcess')) {
     . ([scriptblock]::Create($definition.Extent.Text))
 }
 $python = (Get-Command python.exe -ErrorAction Stop).Source
-$values = @('', 'normal', 'con espacios', 'C:\carpeta con espacios\', 'comilla"dentro', 'barra\"comilla', 'español 漢字', '$(no ejecutar); & echo no', "primera`nsegunda")
-$code = 'import json,sys; print(json.dumps(sys.argv[1:], ensure_ascii=False))'
-$process = New-NativeProcess $python (@('-X', 'utf8', '-c', $code) + $values)
-[void]$process.Start()
-$outputTask = $process.StandardOutput.ReadToEndAsync()
-$errorTask = $process.StandardError.ReadToEndAsync()
-if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Timeout del test de argumentos.' }
-if ($process.ExitCode -ne 0) { throw $errorTask.Result }
-$received = @($outputTask.Result | ConvertFrom-Json)
-if ($received.Count -ne $values.Count) { throw 'Se perdieron argumentos.' }
-for ($index = 0; $index -lt $values.Count; $index++) {
-    if ($received[$index] -cne $values[$index]) { throw "Argumento alterado en la posición $index" }
+# PowerShell 5.1 no enumera arrays JSON en la salida del cmdlet.
+# Un objeto con la propiedad arguments evita anidar el array al recoger la salida.
+# Referencia: https://github.com/PowerShell/PowerShell/issues/3424
+function Assert-NativeArguments([string[]]$Values) {
+    $code = 'import json,sys; print(json.dumps({"arguments": sys.argv[1:]}, ensure_ascii=False))'
+    $process = New-NativeProcess $python (@('-X', 'utf8', '-c', $code) + $Values)
+    try {
+        [void]$process.Start()
+        $outputTask = $process.StandardOutput.ReadToEndAsync()
+        $errorTask = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Timeout del test de argumentos.' }
+        if ($process.ExitCode -ne 0) { throw $errorTask.Result }
+        $payload = ConvertFrom-Json -InputObject $outputTask.Result
+        $received = @($payload.arguments)
+        if ($received.Count -ne $Values.Count) {
+            throw "Cantidad de argumentos distinta: esperados $($Values.Count), recibidos $($received.Count). JSON: $($outputTask.Result)"
+        }
+        for ($index = 0; $index -lt $Values.Count; $index++) {
+            if ($received[$index] -cne $Values[$index]) {
+                throw "Argumento alterado en la posición $index. JSON: $($outputTask.Result)"
+            }
+        }
+    } finally { $process.Dispose() }
 }
-$process.Dispose()
+Assert-NativeArguments -Values @()
+Assert-NativeArguments -Values @('')
+Assert-NativeArguments -Values @('único')
+Assert-NativeArguments -Values @('', 'normal', 'con espacios', 'C:\carpeta con espacios\', 'comilla"dentro', 'barra\"comilla', 'español 漢字', '$(no ejecutar); & echo no', "primera`nsegunda")
 Write-Output 'Argumentos, rutas y Unicode: correctos.'
 
 $hostExe = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'

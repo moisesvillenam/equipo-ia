@@ -3,7 +3,7 @@
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -Eeuo pipefail
 
-EQUIPO_VERSION="4.5.0"
+EQUIPO_VERSION="4.5.1"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 
 # La configuración NO pisa variables de entorno ya definidas.

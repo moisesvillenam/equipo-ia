@@ -60,8 +60,8 @@ jobs:
       - name: Upload Windows preview
         uses: actions/upload-artifact@v4
         with:
-          name: Equipo-IA-Windows-v4.5.0
-          path: dist/Equipo-IA-Windows-v4.5.0.zip
+          name: Equipo-IA-Windows-v4.5.1
+          path: dist/Equipo-IA-Windows-v4.5.1.zip
 
   windows-ui:
     runs-on: windows-latest

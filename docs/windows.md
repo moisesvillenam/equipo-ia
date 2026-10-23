@@ -2,7 +2,7 @@
 
 Esta interfaz permite abrir Equipo IA con doble clic, preparar Ubuntu, seleccionar
 un proyecto, pedir un cambio, revisar el resultado, aplicarlo y guardar una versión
-local. El motor sigue siendo el orquestador 4.5.0. La ventana usa Windows Forms y
+local. El motor sigue siendo el orquestador 4.5.1. La ventana usa Windows Forms y
 Windows PowerShell 5.1; los agentes y las pruebas se ejecutan dentro de WSL.
 
 ## Estado de esta entrega
@@ -178,7 +178,7 @@ python3 -m unittest discover -s desktop -p 'test_*.py' -v
 python3 desktop/package_windows.py
 ```
 
-El ZIP se genera en `dist/Equipo-IA-Windows-v4.5.0.zip`. Incluye fuentes explícitas,
+El ZIP se genera en `dist/Equipo-IA-Windows-v4.5.1.zip`. Incluye fuentes explícitas,
 la licencia y un archivo de inicio. Excluye `.git`, cachés y archivos de estado.
 Convierte los scripts de Windows a CRLF y PowerShell a UTF-8 con BOM para conservar
 el español en Windows PowerShell 5.1.

@@ -3,7 +3,7 @@
 # Copyright 2026 The Equipo IA Authors. SPDX-License-Identifier: Apache-2.0
 set -uo pipefail
 
-EQUIPO_VERSION="4.5.0"
+EQUIPO_VERSION="4.5.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EQUIPO_CONFIG="${EQUIPO_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/equipo-ia/config.env}"
 EQUIPO_STATE_DIR="${EQUIPO_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/equipo-ia}"

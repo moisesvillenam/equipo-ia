@@ -6,7 +6,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser()
-parser.add_argument("--output", type=Path, default=ROOT / "dist/Equipo-IA-Windows-v4.5.0.zip")
+parser.add_argument("--output", type=Path, default=ROOT / "dist/Equipo-IA-Windows-v4.5.1.zip")
 args = parser.parse_args()
 args.output.parent.mkdir(parents=True, exist_ok=True)
 directories = ["windows", "desktop", "bin", "examples", "config", "docs"]
@@ -24,7 +24,7 @@ with zipfile.ZipFile(args.output, "w", zipfile.ZIP_DEFLATED) as package:
         item = zipfile.ZipInfo.from_file(path, arcname="Equipo-IA/" + relative.as_posix())
         item.compress_type = zipfile.ZIP_DEFLATED
         package.writestr(item, data)
-    package.writestr("Equipo-IA/EMPIEZA-AQUI.txt", """EQUIPO IA 4.5.0 PARA WINDOWS - VISTA PREVIA
+    package.writestr("Equipo-IA/EMPIEZA-AQUI.txt", """EQUIPO IA 4.5.1 PARA WINDOWS - VISTA PREVIA
 
 1. Extrae toda la carpeta Equipo-IA del ZIP a una carpeta local.
 2. Abre windows y haz doble clic en Instalar Equipo IA.cmd.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.5.1 — 2026-10-23
+
+- Se corrige la lectura de la respuesta JSON de la prueba de transporte nativo en
+  Windows PowerShell 5.1. La respuesta usa un objeto con la propiedad `arguments`,
+  evitando contar un array completo como un solo argumento.
+- Se conserva la comparación exacta de los nueve argumentos originales y se añaden
+  casos sin argumentos, con un argumento vacío y con un argumento Unicode.
+- Los errores muestran cantidades y la respuesta recibida para facilitar el
+  diagnóstico. Se liberan los recursos del proceso incluso cuando falla el test.
+- La prueba de construcción de WinForms sigue siendo obligatoria. El transporte
+  de la aplicación no cambia. El CI de Windows debe aprobar antes del release.
+
 ## 4.5.0 — 2026-10-23
 
 - Aplicación Windows Forms con preparación guiada de WSL/Ubuntu, instalación y

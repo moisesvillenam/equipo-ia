@@ -122,7 +122,7 @@ def diagnose() -> dict:
     missing = [name for name in names[:7] if not found[name]]
     return {"tools": found, "missing": missing, "ready": not missing,
             "codex_auth": auth, "home": str(Path.home()), "state_dir": str(state_dir()),
-            "user_is_root": os.geteuid() == 0, "engine_version": "4.5.0"}
+            "user_is_root": os.geteuid() == 0, "engine_version": "4.5.1"}
 
 
 def example() -> dict:
